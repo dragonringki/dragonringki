@@ -3,9 +3,12 @@
 <head>
     <title>My Pentesting Portfolio</title>
     <style>
+        /* Basic Page Styling */
         body {
-            font-family: sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
+            line-height: 1.6;
+            color: #333;
         }
 
         #sidebar {
@@ -14,11 +17,16 @@
             position: fixed;
             height: 100%;
             overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
 
         #content {
-            margin-left: 250px;
+            margin-left: 270px;
             padding: 20px;
+        }
+
+        h1, h2, h3, h4 {
+            color: #007bff;
         }
 
         nav ul {
@@ -31,10 +39,57 @@
             color: #333;
             padding: 15px;
             text-decoration: none;
+            transition: background-color 0.3s;
         }
 
             nav a:hover {
                 background: #ddd;
+            }
+
+        /* Table Styling */
+        .portfolio-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px; /* Add margin below the table */
+        }
+
+            .portfolio-table th,
+            .portfolio-table td {
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }
+
+            .portfolio-table th {
+                background-color: #f0f0f0; /* Light gray background for headers */
+            }
+
+            .portfolio-table a {
+                display: block;
+                padding: 5px; /* Reduce padding for links within the cells */
+                background-color: #fff;
+                color: #333;
+                text-decoration: none;
+                border-radius: 4px;
+                transition: background-color 0.3s, box-shadow 0.3s;
+            }
+
+                .portfolio-table a:hover {
+                    background-color: #f5f5f5;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                }
+
+        /* Write-up Container Styling (adjust as needed) */
+        #writeup-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+            #writeup-container h2,
+            #writeup-container h3 {
+                color: #333;
             }
     </style>
 </head>
@@ -52,8 +107,112 @@
     </div>
 
     <div id="content">
+        <h1>Portfolio</h1>
+        <h2>HackTheBox</h2>
+        <h3>Pentester</h3>
+
+        <div class="category">
+            <table class="portfolio-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Difficulty</th>
+                    </tr>
+                </thead>
+                <tbody id="htb-pentester-table-body"></tbody>
+            </table>
+        </div>
+
+        <h3>Fortress</h3>
+        <div class="category">
+            <table class="portfolio-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Difficulty</th>
+                    </tr>
+                </thead>
+                <tbody id="htb-fortress-table-body"></tbody>
+            </table>
+        </div>
+
+        <h2>TryHackMe</h2>
+        <div class="category">
+            <table class="portfolio-table">
+                <thead>
+                    <tr>
+                        <th>Subject</th>
+                        <th>Difficulty</th>
+                    </tr>
+                </thead>
+                <tbody id="thm-table-body"></tbody>
+            </table>
+        </div>
 
     </div>
 
+    <script>
+        const topics = {
+            "Pentester": [
+                { title: "Penetration Testing Process", difficulty: "Fundamental", file: "Penetration-Testing-Process.html" },
+                { title: "Getting Started", difficulty: "Fundamental", file: "getting-started.html" },
+                { title: "Network Enumeration with Nmap", difficulty: "Easy", file: "network-enumeration-with-nmap.html" },
+                { title: "Footprinting", difficulty: "Medium", file: "footprinting.html" },
+                { title: "Information Gathering - Web Edition", difficulty: "Easy", file: "information-gathering-web-edition.html" },
+                { title: "Vulnerability Assessment", difficulty: "Easy", file: "vulnerability-assessment.html" },
+                { title: "File Transfers", difficulty: "Medium", file: "file-transfers.html" },
+                { title: "Shells & Payloads", difficulty: "Medium", file: "shells-payloads.html" },
+                { title: "Using the Metasploit Framework", difficulty: "Easy", file: "using-the-metasploit-framework.html" },
+                { title: "Password Attacks", difficulty: "Medium", file: "password-attacks.html" },
+                { title: "Attacking Common Services", difficulty: "Medium", file: "attacking-common-services.html" },
+                { title: "Pivoting, Tunneling, and Port Forwarding", difficulty: "Medium", file: "pivoting-tunneling-and-port-forwarding.html" },
+                { title: "Active Directory Enumeration & Attacks", difficulty: "Medium", file: "active-directory-enumeration-attacks.html" },
+                { title: "Using Web Proxies", difficulty: "Easy", file: "using-web-proxies.html" },
+                { title: "Attacking Web Applications with Ffuf", difficulty: "Easy", file: "attacking-web-applications-with-ffuf.html" },
+                { title: "Login Brute Forcing", difficulty: "Easy", file: "login-brute-forcing.html" },
+                { title: "SQL Injection Fundamentals", difficulty: "Medium", file: "sql-injection-fundamentals.html" },
+                { title: "SQLMap Essentials", difficulty: "Easy", file: "sqlmap-essentials.html" },
+                { title: "Cross-Site Scripting (XSS)", difficulty: "Easy", file: "cross-site-scripting-xss.html" },
+                { title: "File Inclusion", difficulty: "Medium", file: "file-inclusion.html" },
+                { title: "File Upload Attacks", difficulty: "Medium", file: "file-upload-attacks.html" },
+                { title: "Command Injections", difficulty: "Medium", file: "command-injections.html" },
+                { title: "Web Attacks", difficulty: "Medium", file: "web-attacks.html" },
+                { title: "Attacking Common Applications", difficulty: "Medium", file: "attacking-common-applications.html" },
+                { title: "Linux Privilege Escalation", difficulty: "Easy", file: "linux-privilege-escalation.html" },
+                { title: "Windows Privilege Escalation", difficulty: "Medium", file: "windows-privilege-escalation.html" },
+                { title: "Documentation & Reporting", difficulty: "Easy", file: "documentation-reporting.html" },
+                { title: "Attacking Enterprise Networks", difficulty: "Medium", file: "attacking-enterprise-networks.html" },
+            ],
+            "Fortress": [
+                // ... (add your Fortress topics here)
+            ],
+            "TryHackMe": [
+                // ... (add your TryHackMe topics here)
+            ]
+        };
+
+
+        function populateTable(tableBodyId, courseUnits) {
+            const tableBody = document.getElementById(tableBodyId);
+            for (const unit of courseUnits) {
+                const row = tableBody.insertRow();
+                const subjectCell = row.insertCell();
+                const difficultyCell = row.insertCell();
+
+                const link = document.createElement('a');
+                link.href = `writeups/${unit.file}`; // Direct link to write-up file
+                link.textContent = unit.title;
+                link.target = "_blank";
+                subjectCell.appendChild(link);
+                difficultyCell.textContent = unit.difficulty;
+            }
+        }
+
+        // Populate the tables
+        populateTable('htb-pentester-table-body', topics["Pentester"]);
+        populateTable('htb-fortress-table-body', topics["Fortress"]);
+        populateTable('thm-table-body', topics["TryHackMe"]);
+    </script>
+    </div>
 </body>
 </html>

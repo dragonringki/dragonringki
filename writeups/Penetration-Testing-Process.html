@@ -1,0 +1,200 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Penetration Testing Cheatsheet and Notes</title>
+    <style>
+        body {
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 20px;
+            background-color: #f4f4f4; /* Light gray background */
+        }
+
+        h2, h3, h4 {
+            color: #007bff; /* Blue heading color */
+        }
+
+        h4 {
+            margin-top: 30px;
+        }
+
+        pre {
+            background-color: #282c34; /* Dark background for code */
+            color: #abb2bf; /* Light text color for code */
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        code {
+            font-family: "Fira Code", monospace;
+        }
+
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+            a:hover {
+                text-decoration: underline;
+            }
+
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .separator {
+            border-top: 1px solid #ddd;
+            margin: 30px 0;
+        }
+
+        .note-callout {
+            background-color: #fff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+            .note-callout p {
+                margin: 0;
+            }
+    </style>
+</head>
+<body>
+
+    <article>
+        <h2>Penetration Testing Cheatsheet</h2>
+
+        <section>
+            <h3>Connecting Using <a href="https://openvpn.net/" target="_blank">OpenVPN</a></h3>
+            <pre><code>sudo openvpn --config &lt;your-config-file&gt;.ovpn</code></pre>
+        </section>
+
+        <section>
+            <h3>Network Scanning</h3>
+            <h4><a href="https://nmap.org/" target="_blank">Nmap</a></h4>
+            <ul>
+                <li>
+                    <b>Ping Scan (Live Hosts):</b>
+                    <pre><code>nmap -sn &lt;IP-Range&gt;</code></pre>
+                </li>
+                <li>
+                    <b>Full Port Scan:</b>
+                    <pre><code>nmap -p 1-65535 &lt;IP-Address&gt;</code></pre>
+                </li>
+                <li>
+                    <b>Service Version Detection:</b>
+                    <pre><code>nmap -sV &lt;IP-Address&gt;</code></pre>
+                </li>
+                <li>
+                    <b>Script Scanning:</b>
+                    <pre><code>nmap -sC -sV -oN nmap_initial &lt;IP-Address&gt;</code></pre>
+                </li>
+            </ul>
+        </section>
+
+        <section>
+            <h3>Web Enumeration</h3>
+            <h4><a href="https://github.com/OJ/gobuster" target="_blank">Gobuster</a></h4>
+            <ul>
+                <li>
+                    <b>Directory Brute-Forcing:</b>
+                    <pre><code>gobuster dir -u http://&lt;IP-Address&gt; -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -o gobuster_results.txt</code></pre>
+                </li>
+            </ul>
+
+            <h4><a href="https://cirt.net/nikto2" target="_blank">Nikto</a></h4>
+            <ul>
+                <li>
+                    <b>Web Server Scanner:</b>
+                    <pre><code>nikto -h http://&lt;IP-Address&gt;</code></pre>
+                </li>
+            </ul>
+        </section>
+
+        <section>
+            <h3>Vulnerability Scanning</h3>
+            <h4><a href="https://www.tenable.com/products/nessus" target="_blank">Nessus</a></h4>
+            <ul>
+                <li>
+                    <b>Running a Scan:</b>
+                    <pre><code>nessus -q -x -i &lt;scan.xml&gt;</code></pre>
+                </li>
+            </ul>
+        </section>
+
+        <section>
+            <h3>Exploitation</h3>
+            <h4><a href="https://www.metasploit.com/" target="_blank">Metasploit</a></h4>
+            <ul>
+                <li>
+                    <b>Starting Metasploit:</b>
+                    <pre><code>msfconsole</code></pre>
+                </li>
+                <li>
+                    <b>EternalBlue Example:</b>
+                    <pre><code>use exploit/windows/smb/ms17_010_eternalblue
+set RHOSTS &lt;IP-Address&gt;
+run</code></pre>
+                </li>
+            </ul>
+
+            <h4>Searchsploit</h4>
+            <ul>
+                <li>
+                    <b>Search for Exploits:</b>
+                    <pre><code>searchsploit &lt;software name/version&gt;</code></pre>
+                </li>
+            </ul>
+        </section>
+    </article>
+
+    <div class="separator"></div>
+    <article>
+        <h2>Hack The Box Pentester Course Notes</h2>
+
+        <h3>Penetration Testing Process</h3>
+        <p>**Overview:** The Penetration Testing Process module provides a structured methodology for conducting penetration tests, ensuring thoroughness and repeatability in identifying and exploiting vulnerabilities.</p>
+
+        <h4>Key Stages:</h4>
+        <ol>
+            <li>Reconnaissance</li>
+            <li>Scanning and Enumeration</li>
+            <li>Exploitation</li>
+            <li>Post-Exploitation</li>
+            <li>Reporting</li>
+        </ol>
+
+        <div class="note-callout">
+            <p><strong>Note:</strong> Following a structured methodology is crucial for ensuring the effectiveness and efficiency of a penetration test.</p>
+        </div>
+
+        <h3>Getting Started</h3>
+        <h4>InfoSec Overview</h4>
+        <p><strong>Key Concepts:</strong></p>
+        <ul>
+            <li><b>CIA Triad:</b> Confidentiality, Integrity, Availability.</li>
+            <li><b>Threats and Vulnerabilities:</b> Understanding various threats and vulnerabilities in the context of information security.</li>
+        </ul>
+
+        <h4>Getting Started with a Pentest Distro</h4>
+        <p><strong>Practical Steps:</strong></p>
+        <ul>
+            <li>**Using Parrot OS**: Installed Parrot OS as the primary pentesting distribution due to its pre-installed tools and security features.</li>
+            <li>**Setup Guide**: Followed the <a href="https://www.parrotsec.org/docs/" target="_blank">Parrot OS Installation Guide</a>.</li>
+        </ul>
+
+        <div class="note-callout">
+            <p><strong>Challenges Faced:</strong> Configuring network settings for optimal performance and security.</p>
+            <p><strong>Solutions:</strong> Followed detailed setup instructions and tutorials to ensure correct configuration.</p>
+        </div>
+    </article>
+</body>
+</html>
