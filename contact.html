@@ -1,42 +1,14 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Pentesting Portfolio</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            margin: 0;
-        }
-
-        #sidebar {
-            background: #f0f0f0;
-            width: 250px;
-            position: fixed;
-            height: 100%;
-            overflow-y: auto;
-        }
-
-        #content {
-            margin-left: 250px;
-            padding: 20px;
-        }
-
-        nav ul {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        nav a {
-            display: block;
-            color: #333;
-            padding: 15px;
-            text-decoration: none;
-        }
-
-            nav a:hover {
-                background: #ddd;
-            }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact - DragonRingki Cybersecurity</title>
+    <meta name="description" content="Get in touch with Matthew for cybersecurity collaboration, consultation, or just to chat about digital security and penetration testing.">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -51,37 +23,49 @@
         </nav>
     </div>
 
-  <div id="content">
-    <h1>Get in Touch</h1>
-    <p>Feel free to reach out through the following form:</p>
+    <div id="content">
+        <div class="card fade-in">
+            <h1>Get in Touch</h1>
+            <p class="text-center">Feel free to reach out through the following form or connect with me on social media:</p>
+        </div>
 
-    <form action="https://formspree.io/f/xdoqqjjb" method="POST">
-      <label for="name">Name:</label><br>
-      <input type="text" id="name" name="name" required><br><br>
-      <label for="email">Email:</label><br>
-      <input type="email" id="email" name="email" required><br><br>
-      <label for="message">Message:</label><br>
-      <textarea id="message" name="message" required></textarea><br><br>
-      <button type="submit">Submit</button>
-    </form>
+        <div class="card">
+            <h2>Send a Message</h2>
+            <form action="https://formspree.io/f/xdoqqjjb" method="POST">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required placeholder="Your full name">
+                
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required placeholder="your.email@example.com">
+                
+                <label for="message">Message:</label>
+                <textarea id="message" name="message" required placeholder="Tell me about your project, question, or just say hello!"></textarea>
+                
+                <button type="submit">Send Message</button>
+            </form>
+        </div>
 
-                <div id="bubbles">
-                    <a href="https://discord.gg/KSdq7f7R" class="bubble" target="_blank">
-                        <img src="discord-logo.png" alt="Discord">
-                    </a>
-                    <a href="https://www.linkedin.com/in/matthew-patey-rankin-78541627/" class="bubble" target="_blank">
-                        <img src="linkedin-logo.png" alt="LinkedIn">
-                    </a>
-                    <a href="https://signal.me/#eu/L2gtfQYZWDqqgff1KfDfak1b8Q15EPh5omJggVg4lygu_9WEEE5BlrSRGT-0muU2" class="bubble" target="_blank">
-                        <img src="signal-logo.png" alt="Signal">
-                    </a>
-                </div>
+        <div class="card">
+            <h2>Connect with Me</h2>
+            <p class="text-center">Find me on these platforms for cybersecurity discussions, collaboration, or networking:</p>
+            
+            <div id="bubbles">
+                <a href="https://discord.gg/KSdq7f7R" class="bubble" target="_blank" title="Join my Discord server">
+                    <img src="discord-logo.png" alt="Discord">
+                    <span class="bubble-label">Discord</span>
+                </a>
+                <a href="https://www.linkedin.com/in/matthew-patey-rankin-78541627/" class="bubble" target="_blank" title="Connect on LinkedIn">
+                    <img src="linkedin-logo.png" alt="LinkedIn">
+                    <span class="bubble-label">LinkedIn</span>
+                </a>
+                <a href="https://signal.me/#eu/L2gtfQYZWDqqgff1KfDfak1b8Q15EPh5omJggVg4lygu_9WEEE5BlrSRGT-0muU2" class="bubble" target="_blank" title="Message me on Signal">
+                    <img src="signal-logo.png" alt="Signal">
+                    <span class="bubble-label">Signal</span>
+                </a>
             </div>
-
-        </body>
-    </html>
-
+        </div>
     </div>
 
+    <script src="script.js"></script>
 </body>
 </html>

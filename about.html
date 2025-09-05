@@ -1,42 +1,14 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>My Pentesting Portfolio</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            margin: 0;
-        }
-
-        #sidebar {
-            background: #f0f0f0;
-            width: 250px;
-            position: fixed;
-            height: 100%;
-            overflow-y: auto;
-        }
-
-        #content {
-            margin-left: 250px;
-            padding: 20px;
-        }
-
-        nav ul {
-            list-style-type: none;
-            padding: 0;
-        }
-
-        nav a {
-            display: block;
-            color: #333;
-            padding: 15px;
-            text-decoration: none;
-        }
-
-            nav a:hover {
-                background: #ddd;
-            }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - DragonRingki Cybersecurity</title>
+    <meta name="description" content="Learn about Matthew's journey in cybersecurity, his skills, experience, and passion for digital security and penetration testing.">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -52,43 +24,84 @@
     </div>
 
     <div id="content">
-        <div id="main-content">
-            <h2>About Me</h2>
-            <div style="display: flex; align-items: center; justify-content: center;">
-                <div style="text-align: center;">
-                    <img src="your_personal_photo.jpg" alt="Matthew" style="width: 200px; height: auto; border-radius: 50%;">
-                    <p>Matthew</p>
-                </div>
-                <div style="text-align: center; margin: 0 20px;">
-                    <img src="double-sided-arrow.png.jpg" alt="Arrow" style="width: 50px; height: auto;">
-                </div>
-                <div style="text-align: center;">
-                    <img src="your_alias_photo.jpg.png" alt="DragonRingki" style="width: 200px; height: auto; border-radius: 50%;">
-                    <p>DragonRingki</p>
+        <div class="card fade-in">
+            <h1>About Me</h1>
+            
+            <div class="profile-section">
+                <div class="profile-images">
+                    <div class="profile-card">
+                        <img src="your_personal_photo.jpg" alt="Matthew" class="profile-image">
+                        <h3 class="text-cyan">Matthew</h3>
+                        <p>The Real Me</p>
+                    </div>
+                    <div class="arrow-container">
+                        <img src="double-sided-arrow.png.jpg" alt="Arrow" class="arrow-image">
+                    </div>
+                    <div class="profile-card">
+                        <img src="your_alias_photo.jpg.png" alt="DragonRingki" class="profile-image">
+                        <h3 class="text-green">DragonRingki</h3>
+                        <p>My Digital Identity</p>
+                    </div>
                 </div>
             </div>
-            <p>Hi, I'm Matthew, a cybersecurity enthusiast based in the UK. I'm currently exploring the fascinating world of hacking and security through Hack The Box challenges and online learning resources.</p>
 
+            <div class="intro-text">
+                <p>Hi, I'm Matthew, a cybersecurity enthusiast based in the UK. I'm currently exploring the fascinating world of hacking and security through Hack The Box challenges and online learning resources.</p>
+            </div>
+        </div>
+
+        <div class="card">
             <h2>My Journey</h2>
             <p>My passion for technology began with my first encounter with Windows 95 on our family computer. Since then, I've been captivated by the intricacies of computer systems and the ever-evolving landscape of digital threats. I'm particularly interested in the art of social engineering and the power of human psychology in exploiting vulnerabilities.</p>
+        </div>
 
+        <div class="card">
             <h2>Skills and Experience</h2>
-            <p>My main strengths are social engineering and scripting. I've gained hands-on experience through Hack The Box, but I'm looking for ethical real-world experience. I'm also actively working towards my CompTIA A+ certification.</p>
+            <div class="skills-grid">
+                <div class="skill-item">
+                    <h3 class="text-cyan">🎯 Social Engineering</h3>
+                    <p>Understanding human psychology and leveraging it for security assessments</p>
+                </div>
+                <div class="skill-item">
+                    <h3 class="text-green">💻 Scripting</h3>
+                    <p>Automating tasks and creating custom tools for penetration testing</p>
+                </div>
+                <div class="skill-item">
+                    <h3 class="text-orange">🔍 Hack The Box</h3>
+                    <p>Hands-on experience with practical cybersecurity challenges</p>
+                </div>
+                <div class="skill-item">
+                    <h3 class="text-red">📜 CompTIA A+</h3>
+                    <p>Currently working towards industry-recognized certification</p>
+                </div>
+            </div>
+        </div>
 
+        <div class="card">
             <h2>Goals and Aspirations</h2>
             <p>My goal is to become a skilled security assessor (pentester), helping individuals and organizations protect their digital assets. I'm passionate about educating others about cybersecurity risks and empowering them to take proactive measures to safeguard their information.</p>
+        </div>
 
+        <div class="card">
             <h2>Outside of Cybersecurity</h2>
-            <p>While the digital world is my playground, I believe in finding balance. When I'm not immersed in cybersecurity challenges, I'm often found knee-deep in a river, fly rod in hand. Fly fishing is my escape, a way to reconnect with nature and unwind from the online world.</p>
-            <p>As a dedicated family man, I also enjoy spending time with my loved ones. Setting up Minecraft servers for my kids has become a shared passion, allowing us to bond over building virtual worlds and embarking on exciting adventures together. It's a reminder that while technology can be a powerful tool, it's the connections we make with others that truly matter.</p>
+            <div class="hobbies-section">
+                <div class="hobby-item">
+                    <h3 class="text-cyan">🎣 Fly Fishing</h3>
+                    <p>While the digital world is my playground, I believe in finding balance. When I'm not immersed in cybersecurity challenges, I'm often found knee-deep in a river, fly rod in hand. Fly fishing is my escape, a way to reconnect with nature and unwind from the online world.</p>
+                </div>
+                <div class="hobby-item">
+                    <h3 class="text-green">👨‍👩‍👧‍👦 Family Time</h3>
+                    <p>As a dedicated family man, I also enjoy spending time with my loved ones. Setting up Minecraft servers for my kids has become a shared passion, allowing us to bond over building virtual worlds and embarking on exciting adventures together. It's a reminder that while technology can be a powerful tool, it's the connections we make with others that truly matter.</p>
+                </div>
+            </div>
+        </div>
 
+        <div class="card">
             <h2>Let's Connect!</h2>
             <p>Feel free to explore my website to learn more about my journey. If you'd like to collaborate on a project, share your insights, or just chat about cybersecurity, I'd love to hear from you! You can reach me through the <a href="contact.html">contact form</a>.</p>
         </div>
-        </body>
-    </html>
-
     </div>
 
+    <script src="script.js"></script>
 </body>
 </html>
