@@ -154,6 +154,7 @@ html
             list-style: disc;
             padding-left: 20px;
         }
+
     </style>
 </head>
 <body>
@@ -281,7 +282,7 @@ html
                 </div>
             </div>
 
-            <!-- NEW SECTION: Miscellaneous File Transfer Methods -->
+            <!-- Misc methods + HTB module -->
             <div class="section">
                 <h3>🧰 Miscellaneous File Transfer Methods (HTB Module Practice)</h3>
                 <p>As part of the <strong>“Miscellaneous File Transfer Methods”</strong> module on Hack The Box Academy, I practiced several additional techniques to move files in constrained environments. These methods are especially useful when classic HTTP/SMB transfers are blocked or tooling is limited.</p>
@@ -298,7 +299,6 @@ html
                 </div>
             </div>
 
-            <!-- NEW SUBSECTION: RDP Drive Redirection Exercise -->
             <div class="section">
                 <h3>🖥️ RDP Drive Redirection with xfreerdp</h3>
                 <p>In one lab scenario, I was given only RDP access to a Windows target and needed a simple, reliable way to move files both ways without setting up extra services. I used <strong>RDP drive redirection</strong> from my Linux attack box with <code>xfreerdp</code>.</p>
@@ -337,6 +337,7 @@ html
                     <li><strong>RDP is a Full Channel:</strong> When RDP is the only foothold, it provides full read/write capability leveraging built-in OS tools and standard network protocols (SMB, HTTP, FTP).</li>
                     <li><strong>Versatility of Native Tools:</strong> Tools like <code>Invoke-WebRequest</code>, <code>net share</code>, and <code>robocopy</code> are powerful, reliable, and often pre-whitelisted, making them excellent choices for payload delivery and data exfiltration.</li>
                     <li><strong>Stealth with Raw TCP:</strong> The <strong>reverse netcat</strong> trick (especially with Base64 encoding) provides the most reliable transfer, as it bypasses application-layer restrictions and is less likely to be logged by non-endpoint detection systems.</li>
+                    <li><strong>Protecting Transfers Matters:</strong> For sensitive data or tooling, I now default to using encrypted channels (HTTPS, SSH, <code>ncat --ssl</code>), encrypting files when I must use clear‑text paths (password‑protected archives / PowerShell AES), and verifying integrity on both ends with SHA256 hashes.</li>
                     <li><strong>Redirection over RDP:</strong> Mapping local drives into an RDP session (e.g. via <code>xfreerdp</code> or <code>mstsc.exe</code>) is a fast, low-friction option when clipboard/file redirection is allowed.</li>
                 </ul>
             </div>
